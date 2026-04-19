@@ -73,51 +73,57 @@ page = st.session_state.page
 
 # ── CSS ──────────────────────────────────────────────────────
 st.markdown("""
-<!-- 
-    ✅ ONLY THE NAVBAR WAS FIXED 
-    ─────────────────────────────────────
-    • Changed .nav-btn-row margin-top from -50px → -58px (exact match to topnav-bar height)
-    • Changed .nav-btn-row height from 50px → 58px (perfect vertical centering inside the bar)
-    • Everything else in the file is 100% untouched (as requested)
--->
-
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap');
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 :root {
-  --bg: #07070f;
-  --surf: #0c0c1a;
-  --card: #111120;
-  --card2: #16162a;
-  --border: #1e1e33;
+  --bg:      #07070f;
+  --surf:    #0c0c1a;
+  --card:    #111120;
+  --card2:   #16162a;
+  --border:  #1e1e33;
   --border2: #2a2a46;
-  --text: #eeeef8;
-  --muted: #50507a;
-  --dim: #7878a8;
-  --accent: #00ffd0;
-  --purple: #a06fff;
-  --red: #ff4d6d;
-  --green: #00e5a0;
-  --amber: #ffb830;
-  --blue: #4da6ff;
-  --head: 'Syne', sans-serif;
-  --mono: 'JetBrains Mono', monospace;
-  --side: 2.4rem;
+  --text:    #eeeef8;
+  --muted:   #50507a;
+  --dim:     #7878a8;
+  --accent:  #00ffd0;
+  --purple:  #a06fff;
+  --red:     #ff4d6d;
+  --green:   #00e5a0;
+  --amber:   #ffb830;
+  --blue:    #4da6ff;
+  --head:    'Syne', sans-serif;
+  --mono:    'JetBrains Mono', monospace;
+  --side:    2.4rem;
 }
+
 /* ── Streamlit chrome resets ── */
 #MainMenu, footer, header { visibility: hidden; }
 .stDeployButton, .stToolbar { display: none !important; }
 .block-container { padding: 0 !important; max-width: 100% !important; }
 .stApp { background: var(--bg) !important; }
 section[data-testid="stSidebar"] { display: none !important; }
-[data-testid="collapsedControl"] { display: none !important; }
+[data-testid="collapsedControl"]  { display: none !important; }
+
+/* FIX 1: Hide the "Manage app" button that appears bottom-right in Streamlit Cloud */
+[data-testid="manage-app-button"],
+.stAppDeployButton,
+button[kind="managedApp"],
+iframe[title="manage-app"],
+div[class*="manageApp"],
+div[class*="manage-app"] { display: none !important; }
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
 /* ════════════════════════════════════════════
-   NAVBAR — HTML bar + button row overlay
+   NAVBAR  — HTML bar + button row overlay
 ════════════════════════════════════════════ */
+
 /* The HTML logo/badge bar */
 .topnav-bar {
   height: 58px; display: flex; align-items: center;
@@ -145,7 +151,7 @@ section[data-testid="stSidebar"] { display: none !important; }
 }
 @keyframes glow {
   0%,100% { box-shadow: 0 0 5px var(--accent); }
-  50% { box-shadow: 0 0 16px var(--accent), 0 0 28px rgba(0,255,208,.25); }
+  50%      { box-shadow: 0 0 16px var(--accent), 0 0 28px rgba(0,255,208,.25); }
 }
 .tnav-div { width: 1px; height: 20px; background: var(--border2); flex-shrink: 0; }
 .tnav-spacer { flex: 1; }
@@ -163,34 +169,45 @@ section[data-testid="stSidebar"] { display: none !important; }
   transition: background .16s, border-color .16s;
 }
 .tnav-gh:hover { background: rgba(0,255,208,.12); border-color: rgba(0,255,208,.5); }
-/* The button row — pulled up to sit inside the navbar */
+
+/* FIX 2: Navbar buttons — properly centered using flexbox instead of margin-left hack */
 .nav-btn-row {
-  background: transparent;
-  margin-top: -58px;          /* ← FIXED: now perfectly aligned with 58px top bar */
-  margin-left: 230px;
+  background: rgba(7,7,15,0.95);
+  margin-top: -58px;
   margin-bottom: 0;
   padding: 0;
   position: relative;
   z-index: 20;
-  height: 58px;               /* ← FIXED: matches top bar height */
+  height: 58px;
   display: flex;
   align-items: center;
+  /* Center the buttons in the available space after the logo (~220px) */
+  padding-left: 220px;
+  padding-right: 160px; /* approx width of badge + github button */
+  pointer-events: none; /* let the logo bar underneath receive clicks for non-button areas */
 }
+
 /* Remove all Streamlit padding/gap from the columns block inside nav-btn-row */
 .nav-btn-row [data-testid="stHorizontalBlock"] {
-  gap: 2px !important;
+  gap: 0px !important;
   background: transparent !important;
   height: 58px !important;
   align-items: center !important;
   flex-wrap: nowrap !important;
   padding: 0 !important;
   margin: 0 !important;
+  width: 100% !important;
+  justify-content: center !important;
 }
 .nav-btn-row [data-testid="column"] {
   padding: 0 !important;
   min-width: 0 !important;
   flex: 0 0 auto !important;
+  display: flex !important;
+  justify-content: center !important;
+  pointer-events: all !important;
 }
+
 /* Style all buttons inside the nav row */
 .nav-btn-row button {
   font-family: 'JetBrains Mono', monospace !important;
@@ -201,7 +218,7 @@ section[data-testid="stSidebar"] { display: none !important; }
   background: transparent !important;
   border: 1px solid transparent !important;
   border-radius: 4px !important;
-  padding: 0.38rem 1rem !important;
+  padding: 0.38rem 1.2rem !important;
   height: 32px !important;
   min-height: 32px !important;
   line-height: 1 !important;
@@ -222,13 +239,12 @@ section[data-testid="stSidebar"] { display: none !important; }
   background: rgba(0,255,208,.07) !important;
   border-color: rgba(0,255,208,.22) !important;
 }
+
 /* ════════════════════════════════════════════
    PAGE WRAPPER
 ════════════════════════════════════════════ */
-.pw { padding: 0 var(--side); max-width: 1440px; margin: 0 auto; }
+.pw  { padding: 0 var(--side); max-width: 1440px; margin: 0 auto; }
 .pfw { padding: 0 var(--side); }
-/* ... ALL OTHER CSS BELOW THIS LINE IS UNCHANGED ... */
-</style>
 
 /* ════════════════════════════════════════════
    HERO
@@ -378,10 +394,23 @@ section[data-testid="stSidebar"] { display: none !important; }
 /* ════════════════════════════════════════════
    SHARED COMPONENTS
 ════════════════════════════════════════════ */
+
+/* FIX 3: .sec heading — add proper left padding so it doesn't bleed to edge */
 .sec {
   font-family:var(--head); font-size:1.1rem; font-weight:700;
   color:var(--text); letter-spacing:-.02em; margin:2rem 0 1.1rem;
   display:flex; align-items:center; gap:.8rem;
+  padding-left: var(--side);  /* matches page padding */
+  margin-left: calc(-1 * var(--side));  /* cancel out .pw padding */
+  padding-right: var(--side);
+  margin-right: calc(-1 * var(--side));
+}
+/* When .sec is inside .pw, we don't want double padding — reset */
+.pw .sec {
+  padding-left: 0;
+  margin-left: 0;
+  padding-right: 0;
+  margin-right: 0;
 }
 .sec::after { content:''; flex:1; height:1px; background:var(--border); }
 .hr { height:1px; background:var(--border); margin:2.2rem 0; }
@@ -477,7 +506,7 @@ section[data-testid="stSidebar"] { display: none !important; }
 # NAVBAR
 # Approach: HTML bar (logo/badge/github) rendered first.
 # Then a .nav-btn-row div wrapping real st.columns + st.buttons,
-# pulled up via CSS margin-top: -50px to sit inside the bar.
+# pulled up via CSS margin-top: -58px to sit inside the bar.
 # The buttons are fully real Streamlit buttons — guaranteed clickable.
 # ════════════════════════════════════════════════════════════
 
