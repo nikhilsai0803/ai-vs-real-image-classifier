@@ -1,4 +1,11 @@
-"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Full Updated app.py (Fixed)</title>
+</head>
+<body>
+<pre><code>"""
 app.py — AI vs Real Image Classifier · Enhanced Multi-Page Streamlit App
 """
 import os, warnings
@@ -22,6 +29,18 @@ st.set_page_config(
 
 if "page" not in st.session_state:
     st.session_state.page = "Detector"
+
+# ── NAV PAGES (moved up so query-param handler can use it) ─────────────────────
+NAV_PAGES = ["Detector", "About", "Tech Stack", "How It Works"]
+
+# ── Handle navigation from navbar query params (fixed for spaces + single-page feel) ──
+qp = st.query_params
+if "p" in qp:
+    requested = qp["p"].replace("+", " ")          # handles "How+It+Works" → "How It Works"
+    if requested in NAV_PAGES:
+        st.session_state.page = requested
+        st.query_params.clear()
+        st.rerun()
 
 IMG_SIZE         = 224
 UNCERTAIN_THRESH = 0.85
@@ -71,7 +90,7 @@ def predict(model, tensor):
 # ── which page are we on ──────────────────────────────────────
 page = st.session_state.page
 
-# ── CSS ──────────────────────────────────────────────────────
+# ── CSS (unchanged) ──────────────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap');
@@ -439,22 +458,10 @@ section[data-testid="stSidebar"] { display: none !important; }
 
 # ════════════════════════════════════════════════════════════
 # NAVBAR — rendered as a single pure-HTML block
-# Nav links use query params to survive rerun
 # ════════════════════════════════════════════════════════════
-NAV_PAGES = ["Detector", "About", "Tech Stack", "How It Works"]
-
-# check if a nav link was clicked via query params
-qp = st.query_params
-if "p" in qp and qp["p"] in NAV_PAGES:
-    st.session_state.page = qp["p"]
-    st.query_params.clear()
-    st.rerun()
-
-page = st.session_state.page
 
 def nav_link_html(label, current):
     cls = "tnav-link active" if label == current else "tnav-link"
-    # encode spaces
     href = f"?p={label.replace(' ', '+')}"
     return f'<a class="{cls}" href="{href}">{label.upper()}</a>'
 
@@ -493,10 +500,10 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
-# PAGE 1 — DETECTOR
+# PAGE 1 — DETECTOR (FIXED: removed det-wrap grid → no more empty boxes)
 # ════════════════════════════════════════════════════════════
 if page == "Detector":
-    st.markdown('<div class="pw"><div class="det-wrap">', unsafe_allow_html=True)
+    st.markdown('<div class="pw">', unsafe_allow_html=True)   # ← only pw, no det-wrap
 
     col_l, col_r = st.columns(2, gap="medium")
 
@@ -587,10 +594,10 @@ if page == "Detector":
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('</div></div>', unsafe_allow_html=True)   # det-wrap + pw
+    st.markdown('</div>', unsafe_allow_html=True)   # close pw
 
 # ════════════════════════════════════════════════════════════
-# PAGE 2 — ABOUT
+# PAGE 2 — ABOUT (unchanged)
 # ════════════════════════════════════════════════════════════
 elif page == "About":
     st.markdown('<div class="pw">', unsafe_allow_html=True)
@@ -667,7 +674,7 @@ elif page == "About":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
-# PAGE 3 — TECH STACK
+# PAGE 3 — TECH STACK (unchanged)
 # ════════════════════════════════════════════════════════════
 elif page == "Tech Stack":
     st.markdown('<div class="pw">', unsafe_allow_html=True)
@@ -753,7 +760,7 @@ elif page == "Tech Stack":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
-# PAGE 4 — HOW IT WORKS
+# PAGE 4 — HOW IT WORKS (unchanged)
 # ════════════════════════════════════════════════════════════
 elif page == "How It Works":
     st.markdown('<div class="pw">', unsafe_allow_html=True)
@@ -833,3 +840,6 @@ st.markdown("""
   <div class="foot-r"><a href="https://github.com/nikhilsai0803/ai-vs-real-image-classifier" target="_blank">GitHub ↗</a></div>
 </div>
 """, unsafe_allow_html=True)
+</code></pre>
+</body>
+</html>
