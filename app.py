@@ -68,9 +68,6 @@ def predict(model, tensor):
         "uncertain": conf < UNCERTAIN_THRESH,
     }
 
-# ── which page are we on ──────────────────────────────────────
-page = st.session_state.page
-
 # ── CSS ──────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -96,7 +93,7 @@ st.markdown("""
   --blue:    #4da6ff;
   --head:    'Syne', sans-serif;
   --mono:    'JetBrains Mono', monospace;
-  --side:    2.4rem;   /* ~2 cm side margin */
+  --side:    2.4rem;
 }
 
 /* ── Streamlit chrome resets ── */
@@ -113,7 +110,7 @@ section[data-testid="stSidebar"] { display: none !important; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
 
 /* ════════════════════════════════════════════
-   NAVBAR  — pure HTML, rendered as one row
+   NAVBAR
 ════════════════════════════════════════════ */
 .topnav {
   position: sticky; top: 0; z-index: 999;
@@ -132,7 +129,6 @@ section[data-testid="stSidebar"] { display: none !important; }
   pointer-events: none;
 }
 
-/* logo */
 .tnav-logo {
   display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;
   font-family: var(--head); font-size: 1.12rem; font-weight: 800;
@@ -150,34 +146,39 @@ section[data-testid="stSidebar"] { display: none !important; }
   50%      { box-shadow: 0 0 16px var(--accent), 0 0 28px rgba(0,255,208,.25); }
 }
 
-/* divider */
 .tnav-div {
   width: 1px; height: 20px; background: var(--border2); flex-shrink: 0;
 }
 
-/* nav links — pure <a> tags, no Streamlit buttons */
+/* Nav buttons styled as links — no redirect */
 .tnav-links {
   display: flex; align-items: center; gap: 0.2rem; flex: 1;
 }
-.tnav-link {
-  font-family: var(--mono); font-size: 0.67rem;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--muted); text-decoration: none;
-  border: 1px solid transparent; border-radius: 4px;
-  padding: 0.38rem 0.95rem;
-  transition: color .16s, background .16s, border-color .16s;
-  cursor: pointer; white-space: nowrap;
+
+/* Hide streamlit button chrome, style as nav pills */
+.tnav-links .stButton button {
+  font-family: var(--mono) !important; font-size: 0.67rem !important;
+  letter-spacing: 0.08em !important; text-transform: uppercase !important;
+  color: var(--muted) !important; text-decoration: none !important;
+  border: 1px solid transparent !important; border-radius: 4px !important;
+  padding: 0.38rem 0.95rem !important;
+  background: transparent !important;
+  transition: color .16s, background .16s, border-color .16s !important;
+  cursor: pointer !important; white-space: nowrap !important;
+  height: auto !important; line-height: normal !important;
 }
-.tnav-link:hover {
-  color: var(--text); background: var(--card); border-color: var(--border2);
-}
-.tnav-link.active {
-  color: var(--accent);
-  background: rgba(0,255,208,.07);
-  border-color: rgba(0,255,208,.22);
+.tnav-links .stButton button:hover {
+  color: var(--text) !important; background: var(--card) !important;
+  border-color: var(--border2) !important;
 }
 
-/* right side */
+/* Active nav button */
+.nav-active .stButton button {
+  color: var(--accent) !important;
+  background: rgba(0,255,208,.07) !important;
+  border-color: rgba(0,255,208,.22) !important;
+}
+
 .tnav-right {
   margin-left: auto; display: flex; align-items: center;
   gap: 0.7rem; flex-shrink: 0;
@@ -196,11 +197,17 @@ section[data-testid="stSidebar"] { display: none !important; }
 }
 .tnav-gh:hover { background: rgba(0,255,208,.12); border-color: rgba(0,255,208,.5); }
 
+/* ── Streamlit column gap fix ── */
+[data-testid="stHorizontalBlock"] {
+  gap: 0 !important;
+  align-items: stretch !important;
+}
+
 /* ════════════════════════════════════════════
-   PAGE WRAPPER  — side margins everywhere
+   PAGE WRAPPER
 ════════════════════════════════════════════ */
 .pw  { padding: 0 var(--side); max-width: 1440px; margin: 0 auto; }
-.pfw { padding: 0 var(--side); }   /* full-width variant */
+.pfw { padding: 0 var(--side); }
 
 /* ════════════════════════════════════════════
    HERO
@@ -241,15 +248,21 @@ section[data-testid="stSidebar"] { display: none !important; }
 /* ════════════════════════════════════════════
    DETECTOR TWO-PANEL LAYOUT
 ════════════════════════════════════════════ */
-.det-wrap {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 1.4rem; padding: 1.8rem 0 2.4rem;
-}
 .det-panel {
   background: var(--card); border: 1px solid var(--border);
   border-radius: 10px; padding: 1.8rem;
+  margin: 1.8rem 0.7rem 2.4rem;
+  transition: border-color .25s, box-shadow .25s;
+}
+.det-panel:hover {
+  border-color: rgba(0,255,208,.28);
+  box-shadow: 0 0 24px rgba(0,255,208,.06), 0 0 2px rgba(0,255,208,.12);
 }
 .det-panel.right { background: var(--surf); }
+.det-panel.right:hover {
+  border-color: rgba(160,111,255,.28);
+  box-shadow: 0 0 24px rgba(160,111,255,.06), 0 0 2px rgba(160,111,255,.12);
+}
 .dp-label {
   font-family: var(--mono); font-size: 0.5rem;
   letter-spacing: 0.24em; text-transform: uppercase;
@@ -264,6 +277,11 @@ section[data-testid="stSidebar"] { display: none !important; }
   display: flex; align-items: center; gap: 0.9rem;
   background: var(--card2); border: 1px solid var(--border2);
   border-radius: 6px; padding: 0.82rem 1rem; margin-bottom: 0.7rem;
+  transition: border-color .2s, box-shadow .2s;
+}
+.mpill-row:hover {
+  border-color: rgba(0,255,208,.3);
+  box-shadow: 0 0 12px rgba(0,255,208,.07);
 }
 .mpill-dot {
   width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
@@ -287,7 +305,15 @@ section[data-testid="stSidebar"] { display: none !important; }
 }
 
 /* uploaded image */
-.img-box { border: 1px solid var(--border2); border-radius: 6px; overflow: hidden; background: var(--bg); margin: 0.6rem 0; }
+.img-box {
+  border: 1px solid var(--border2); border-radius: 6px; overflow: hidden;
+  background: var(--bg); margin: 0.6rem 0;
+  transition: border-color .2s, box-shadow .2s;
+}
+.img-box:hover {
+  border-color: rgba(0,255,208,.3);
+  box-shadow: 0 0 16px rgba(0,255,208,.08);
+}
 .img-meta {
   font-family: var(--mono); font-size: 0.54rem;
   letter-spacing: 0.1em; text-transform: uppercase;
@@ -301,12 +327,19 @@ section[data-testid="stSidebar"] { display: none !important; }
   background: var(--card2); padding: 1.6rem;
   position: relative; overflow: hidden;
   animation: up .3s ease; margin-bottom: 0.9rem;
+  transition: border-color .25s, box-shadow .25s;
+}
+.result:hover {
+  box-shadow: 0 0 20px rgba(0,0,0,.3);
 }
 @keyframes up { from { opacity:0; transform:translateY(8px);} to {opacity:1;transform:translateY(0);} }
 .result::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
 .result.real::before  { background: linear-gradient(90deg,transparent,var(--green),transparent); }
 .result.fake::before  { background: linear-gradient(90deg,transparent,var(--red),transparent); }
 .result.unsure::before{ background: linear-gradient(90deg,transparent,var(--amber),transparent); }
+.result.real:hover  { border-color: rgba(0,229,160,.3); box-shadow: 0 0 20px rgba(0,229,160,.07); }
+.result.fake:hover  { border-color: rgba(255,77,109,.3); box-shadow: 0 0 20px rgba(255,77,109,.07); }
+.result.unsure:hover{ border-color: rgba(255,184,48,.3); box-shadow: 0 0 20px rgba(255,184,48,.07); }
 
 .verd-lbl { font-family:var(--mono); font-size:.48rem; letter-spacing:.24em; color:var(--muted); text-transform:uppercase; }
 .verd { font-family:var(--head); font-size:2.5rem; font-weight:800; letter-spacing:-.04em; line-height:1; margin:.25rem 0; }
@@ -320,7 +353,11 @@ section[data-testid="stSidebar"] { display: none !important; }
 .br { background:linear-gradient(90deg,var(--red),#ff8099); }
 
 .scores { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.55rem; margin-top:.9rem; }
-.sc { background:var(--surf); border:1px solid var(--border); border-radius:5px; padding:.65rem; text-align:center; }
+.sc {
+  background:var(--surf); border:1px solid var(--border); border-radius:5px; padding:.65rem; text-align:center;
+  transition: border-color .2s, box-shadow .2s;
+}
+.sc:hover { border-color: rgba(0,255,208,.25); box-shadow: 0 0 10px rgba(0,255,208,.06); }
 .sc-v { font-family:var(--mono); font-size:.9rem; font-weight:500; color:var(--text); display:block; }
 .sc-l { font-family:var(--mono); font-size:.47rem; letter-spacing:.14em; color:var(--muted); text-transform:uppercase; display:block; margin-top:.22rem; }
 
@@ -333,7 +370,9 @@ section[data-testid="stSidebar"] { display: none !important; }
 .info-card {
   background:var(--card); border:1px solid var(--border);
   border-radius:6px; padding:1rem 1.1rem;
+  transition: border-color .2s, box-shadow .2s;
 }
+.info-card:hover { border-color: rgba(0,255,208,.2); box-shadow: 0 0 12px rgba(0,255,208,.05); }
 .info-card .card-lbl { font-family:var(--mono); font-size:.48rem; letter-spacing:.22em; color:var(--muted); text-transform:uppercase; margin-bottom:.45rem; }
 .info-card .card-p   { font-family:var(--mono); font-size:.68rem; color:var(--dim); line-height:1.85; }
 
@@ -359,15 +398,26 @@ section[data-testid="stSidebar"] { display: none !important; }
 .card {
   background:var(--card); border:1px solid var(--border);
   border-radius:8px; padding:1.4rem 1.5rem; margin-bottom:.9rem;
-  transition:border-color .2s;
+  transition: border-color .22s, box-shadow .22s, transform .22s;
 }
-.card:hover { border-color:var(--border2); }
-.card.a{border-top:2px solid var(--accent);}
-.card.p{border-top:2px solid var(--purple);}
-.card.g{border-top:2px solid var(--green);}
-.card.r{border-top:2px solid var(--red);}
-.card.am{border-top:2px solid var(--amber);}
-.card.b{border-top:2px solid var(--blue);}
+.card:hover {
+  border-color: rgba(0,255,208,.22);
+  box-shadow: 0 0 22px rgba(0,255,208,.06), 0 4px 16px rgba(0,0,0,.25);
+  transform: translateY(-2px);
+}
+.card.a{ border-top:2px solid var(--accent); }
+.card.a:hover { border-color: rgba(0,255,208,.4); box-shadow: 0 0 22px rgba(0,255,208,.1), 0 4px 16px rgba(0,0,0,.25); }
+.card.p{ border-top:2px solid var(--purple); }
+.card.p:hover { border-color: rgba(160,111,255,.4); box-shadow: 0 0 22px rgba(160,111,255,.1), 0 4px 16px rgba(0,0,0,.25); }
+.card.g{ border-top:2px solid var(--green); }
+.card.g:hover { border-color: rgba(0,229,160,.4); box-shadow: 0 0 22px rgba(0,229,160,.1), 0 4px 16px rgba(0,0,0,.25); }
+.card.r{ border-top:2px solid var(--red); }
+.card.r:hover { border-color: rgba(255,77,109,.4); box-shadow: 0 0 22px rgba(255,77,109,.1), 0 4px 16px rgba(0,0,0,.25); }
+.card.am{ border-top:2px solid var(--amber); }
+.card.am:hover { border-color: rgba(255,184,48,.4); box-shadow: 0 0 22px rgba(255,184,48,.1), 0 4px 16px rgba(0,0,0,.25); }
+.card.b{ border-top:2px solid var(--blue); }
+.card.b:hover { border-color: rgba(77,166,255,.4); box-shadow: 0 0 22px rgba(77,166,255,.1), 0 4px 16px rgba(0,0,0,.25); }
+
 .card-lbl { font-family:var(--mono); font-size:.5rem; letter-spacing:.24em; color:var(--muted); text-transform:uppercase; margin-bottom:.55rem; }
 .card-h   { font-family:var(--head); font-size:.96rem; font-weight:700; color:var(--text); margin-bottom:.45rem; }
 .card-p   { font-family:var(--mono); font-size:.7rem; color:var(--dim); line-height:1.9; }
@@ -375,10 +425,15 @@ section[data-testid="stSidebar"] { display: none !important; }
 .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:.9rem; margin:1.8rem 0; }
 .stat {
   background:var(--card); border:1px solid var(--border); border-radius:8px;
-  padding:1.3rem; text-align:center; transition:border-color .2s, transform .2s;
+  padding:1.3rem; text-align:center;
+  transition: border-color .22s, box-shadow .22s, transform .22s;
   position:relative; overflow:hidden;
 }
-.stat:hover { border-color:var(--border2); transform:translateY(-2px); }
+.stat:hover {
+  border-color: rgba(0,255,208,.3);
+  box-shadow: 0 0 28px rgba(0,255,208,.09), 0 4px 18px rgba(0,0,0,.3);
+  transform: translateY(-3px);
+}
 .stat-v { font-family:var(--head); font-size:2.1rem; font-weight:800; line-height:1; display:block; margin-bottom:.35rem; }
 .stat-l { font-family:var(--mono); font-size:.5rem; letter-spacing:.18em; color:var(--muted); text-transform:uppercase; }
 
@@ -393,9 +448,14 @@ section[data-testid="stSidebar"] { display: none !important; }
 .step {
   display:flex; gap:1.3rem; padding:1.3rem 1.4rem; background:var(--card);
   border:1px solid var(--border); border-radius:8px;
-  margin-bottom:.85rem; align-items:flex-start; transition:border-color .2s;
+  margin-bottom:.85rem; align-items:flex-start;
+  transition: border-color .22s, box-shadow .22s, transform .22s;
 }
-.step:hover { border-color:var(--border2); }
+.step:hover {
+  border-color: rgba(0,255,208,.28);
+  box-shadow: 0 0 20px rgba(0,255,208,.07), 0 4px 14px rgba(0,0,0,.25);
+  transform: translateX(4px);
+}
 .step-n { font-family:var(--head); font-size:1.9rem; font-weight:800; color:var(--border2); line-height:1; min-width:2.2rem; text-align:center; padding-top:.05rem; }
 .step-h { font-family:var(--head); font-size:.92rem; font-weight:700; color:var(--text); margin-bottom:.35rem; }
 .step-b { font-family:var(--mono); font-size:.69rem; color:var(--dim); line-height:1.9; }
@@ -405,6 +465,11 @@ section[data-testid="stSidebar"] { display: none !important; }
   border-left:3px solid var(--accent); border-radius:6px;
   padding:1.2rem 1.4rem; font-family:var(--mono); font-size:.67rem;
   color:#8080b0; line-height:2.1; overflow-x:auto; white-space:pre; margin:1rem 0;
+  transition: border-color .2s, box-shadow .2s;
+}
+.code:hover {
+  border-color: rgba(0,255,208,.3);
+  box-shadow: 0 0 18px rgba(0,255,208,.05);
 }
 .kw{color:var(--purple);} .fn{color:var(--accent);} .st{color:var(--green);} .cm{color:#35355a;} .nm{color:var(--amber);}
 
@@ -412,6 +477,7 @@ section[data-testid="stSidebar"] { display: none !important; }
 .tbl td { font-family:var(--mono); font-size:.68rem; padding:.62rem .7rem; border-bottom:1px solid var(--border); vertical-align:top; }
 .tbl td:first-child { color:var(--muted); width:36%; font-size:.57rem; letter-spacing:.07em; text-transform:uppercase; }
 .tbl td:last-child  { color:var(--text); }
+.tbl tr:hover td { background: rgba(0,255,208,.03); }
 
 /* footer */
 .foot {
@@ -427,10 +493,22 @@ section[data-testid="stSidebar"] { display: none !important; }
   background:var(--card2) !important; border:1px solid var(--border2) !important;
   border-radius:5px !important; color:var(--text) !important;
   font-family:var(--mono) !important; font-size:.82rem !important;
+  transition: border-color .2s, box-shadow .2s !important;
+}
+.stSelectbox > div > div:hover {
+  border-color: rgba(0,255,208,.35) !important;
+  box-shadow: 0 0 12px rgba(0,255,208,.08) !important;
 }
 .stSelectbox label { color:var(--muted) !important; font-family:var(--mono) !important; font-size:.56rem !important; letter-spacing:.16em !important; text-transform:uppercase !important; }
-.stFileUploader > div { border:1px dashed var(--border2) !important; border-radius:7px !important; background:var(--card2) !important; }
-.stFileUploader > div:hover { border-color:var(--accent) !important; }
+.stFileUploader > div {
+  border:1px dashed var(--border2) !important; border-radius:7px !important;
+  background:var(--card2) !important;
+  transition: border-color .2s, box-shadow .2s !important;
+}
+.stFileUploader > div:hover {
+  border-color:var(--accent) !important;
+  box-shadow: 0 0 18px rgba(0,255,208,.1) !important;
+}
 .stFileUploader label { color:var(--muted) !important; font-family:var(--mono) !important; font-size:.56rem !important; letter-spacing:.16em !important; text-transform:uppercase !important; }
 .stImage img { border-radius:0 !important; display:block !important; }
 .stSpinner > div { border-top-color:var(--accent) !important; }
@@ -438,39 +516,89 @@ section[data-testid="stSidebar"] { display: none !important; }
 """, unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
-# NAVBAR — rendered as a single pure-HTML block
-# Nav links use query params to survive rerun
+# NAVBAR — uses session_state buttons, NO href redirects
 # ════════════════════════════════════════════════════════════
 NAV_PAGES = ["Detector", "About", "Tech Stack", "How It Works"]
 
-# check if a nav link was clicked via query params
-qp = st.query_params
-if "p" in qp and qp["p"] in NAV_PAGES:
-    st.session_state.page = qp["p"]
-    st.query_params.clear()
-    st.rerun()
-
 page = st.session_state.page
 
-def nav_link_html(label, current):
-    cls = "tnav-link active" if label == current else "tnav-link"
-    # encode spaces
-    href = f"?p={label.replace(' ', '+')}"
-    return f'<a class="{cls}" href="{href}">{label.upper()}</a>'
-
-links_html = "".join(nav_link_html(p, page) for p in NAV_PAGES)
-
+# Logo + badge row
 st.markdown(f"""
 <nav class="topnav">
   <span class="tnav-logo"><span class="tnav-dot"></span>AI<em>vs</em>Real</span>
   <div class="tnav-div"></div>
-  <div class="tnav-links">{links_html}</div>
+""", unsafe_allow_html=True)
+
+# Inject nav buttons using Streamlit columns inside a container
+with st.container():
+    # We render the nav inside the topnav via absolute positioning trick
+    # Actually we render it just below but hide the gap with CSS
+    pass
+
+# Close the nav HTML
+st.markdown("""
   <div class="tnav-right">
     <span class="tnav-badge">TF 2.21</span>
     <a class="tnav-gh" href="https://github.com/nikhilsai0803/ai-vs-real-image-classifier" target="_blank">GitHub ↗</a>
   </div>
 </nav>
 """, unsafe_allow_html=True)
+
+# ── Streamlit nav buttons (rendered cleanly below the HTML nav) ──
+# We overlap them with the nav using CSS margin-top trick
+st.markdown("""
+<style>
+/* Pull the nav-buttons row up into the navbar */
+div[data-testid="stHorizontalBlock"].nav-row-block {
+  position: relative;
+  margin-top: -52px !important;
+  margin-left: 200px !important;
+  z-index: 1000;
+  background: transparent !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  max-width: 700px;
+}
+/* Target the nav button columns specifically */
+.nav-btn-col > div > div > div > button {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.67rem !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #50507a !important;
+  border: 1px solid transparent !important;
+  border-radius: 4px !important;
+  padding: 0.38rem 0.95rem !important;
+  background: transparent !important;
+  height: 34px !important;
+  transition: all .16s !important;
+}
+.nav-btn-col > div > div > div > button:hover {
+  color: #eeeef8 !important;
+  background: #111120 !important;
+  border-color: #2a2a46 !important;
+}
+.nav-btn-col.active-nav > div > div > div > button {
+  color: #00ffd0 !important;
+  background: rgba(0,255,208,.07) !important;
+  border-color: rgba(0,255,208,.22) !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Render invisible nav buttons in a row
+nav_cols = st.columns(len(NAV_PAGES), gap="small")
+for i, (col, nav_page) in enumerate(zip(nav_cols, NAV_PAGES)):
+    is_active = (nav_page == page)
+    css_class = "nav-btn-col active-nav" if is_active else "nav-btn-col"
+    col.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
+    if col.button(nav_page, key=f"nav_{nav_page}"):
+        st.session_state.page = nav_page
+        st.rerun()
+    col.markdown('</div>', unsafe_allow_html=True)
+
+# Re-read page after potential rerun
+page = st.session_state.page
 
 # ════════════════════════════════════════════════════════════
 # HERO
@@ -496,8 +624,6 @@ st.markdown(f"""
 # PAGE 1 — DETECTOR
 # ════════════════════════════════════════════════════════════
 if page == "Detector":
-    st.markdown('<div class="pw"><div class="det-wrap">', unsafe_allow_html=True)
-
     col_l, col_r = st.columns(2, gap="medium")
 
     with col_l:
@@ -586,8 +712,6 @@ if page == "Detector":
             """, unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('</div></div>', unsafe_allow_html=True)   # det-wrap + pw
 
 # ════════════════════════════════════════════════════════════
 # PAGE 2 — ABOUT
