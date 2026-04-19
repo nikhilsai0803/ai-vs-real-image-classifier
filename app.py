@@ -1,5 +1,5 @@
 """
-app.py — AI vs Real Image Classifier · Enhanced Multi-Page Streamlit App
+app.py — AI vs Real Image Classifier · Single-Page Scrollable Streamlit App
 """
 import os, warnings
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -19,9 +19,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
-
-if "page" not in st.session_state:
-    st.session_state.page = "Detector"
 
 IMG_SIZE         = 224
 UNCERTAIN_THRESH = 0.85
@@ -68,9 +65,6 @@ def predict(model, tensor):
         "uncertain": conf < UNCERTAIN_THRESH,
     }
 
-NAV_PAGES = ["Detector", "About", "Tech Stack", "How It Works"]
-page = st.session_state.page
-
 # ── CSS ──────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -106,14 +100,9 @@ st.markdown("""
 .stApp { background: var(--bg) !important; }
 section[data-testid="stSidebar"] { display: none !important; }
 [data-testid="collapsedControl"]  { display: none !important; }
-
-/* FIX 1: Hide the "Manage app" button that appears bottom-right in Streamlit Cloud */
 [data-testid="manage-app-button"],
 .stAppDeployButton,
-button[kind="managedApp"],
-iframe[title="manage-app"],
-div[class*="manageApp"],
-div[class*="manage-app"] { display: none !important; }
+button[kind="managedApp"] { display: none !important; }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; }
@@ -121,123 +110,107 @@ div[class*="manage-app"] { display: none !important; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
 
 /* ════════════════════════════════════════════
-   NAVBAR  — HTML bar + button row overlay
+   SITE HEADER
 ════════════════════════════════════════════ */
-
-/* The HTML logo/badge bar */
-.topnav-bar {
-  height: 58px; display: flex; align-items: center;
-  padding: 0 var(--side); gap: 2.4rem;
-  background: rgba(7,7,15,0.95);
-  backdrop-filter: blur(18px) saturate(160%);
+.site-header {
+  padding: 3.5rem var(--side) 2.8rem;
   border-bottom: 1px solid var(--border);
-  position: relative; z-index: 10;
+  position: relative; overflow: hidden;
+  background: var(--bg);
 }
-.topnav-bar::after {
+.site-header::before {
+  content: '';
+  position: absolute; top: -120px; right: -60px;
+  width: 560px; height: 560px;
+  background: radial-gradient(circle, rgba(0,255,208,.045) 0%, transparent 60%);
+  pointer-events: none;
+}
+.site-header::after {
   content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
   background: linear-gradient(90deg, transparent 0%, rgba(0,255,208,.18) 50%, transparent 100%);
   pointer-events: none;
 }
-.tnav-logo {
-  display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;
-  font-family: var(--head); font-size: 1.12rem; font-weight: 800;
-  color: var(--text); letter-spacing: -0.03em; white-space: nowrap;
+.sh-eyebrow {
+  font-family: var(--mono); font-size: 0.54rem;
+  letter-spacing: 0.3em; color: var(--accent);
+  text-transform: uppercase; margin-bottom: 0.8rem;
+  display: flex; align-items: center; gap: 0.6rem;
 }
-.tnav-logo em { color: var(--accent); font-style: normal; }
-.tnav-dot {
+.sh-eyebrow::before {
+  content: ''; display: inline-block;
   width: 7px; height: 7px; border-radius: 50%;
   background: var(--accent); box-shadow: 0 0 10px var(--accent);
-  animation: glow 2.4s ease-in-out infinite; flex-shrink: 0;
+  animation: glow 2.4s ease-in-out infinite;
 }
 @keyframes glow {
   0%,100% { box-shadow: 0 0 5px var(--accent); }
   50%      { box-shadow: 0 0 16px var(--accent), 0 0 28px rgba(0,255,208,.25); }
 }
-.tnav-div { width: 1px; height: 20px; background: var(--border2); flex-shrink: 0; }
-.tnav-spacer { flex: 1; }
-.tnav-right { display: flex; align-items: center; gap: 0.7rem; flex-shrink: 0; }
-.tnav-badge {
+.sh-title {
+  font-family: var(--head);
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  font-weight: 800; color: var(--text);
+  letter-spacing: -0.04em; line-height: 1.02; margin-bottom: 0.9rem;
+}
+.sh-title b { color: var(--accent); }
+.sh-sub {
+  font-family: var(--mono); font-size: 0.74rem;
+  color: var(--dim); line-height: 1.9; max-width: 560px;
+  margin-bottom: 1.6rem;
+}
+.sh-meta {
+  display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;
+}
+.sh-badge {
   font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.16em;
   color: var(--muted); border: 1px solid var(--border2);
-  border-radius: 3px; padding: 0.2rem 0.5rem; text-transform: uppercase;
+  border-radius: 3px; padding: 0.22rem 0.55rem; text-transform: uppercase;
 }
-.tnav-gh {
+.sh-gh {
   font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.06em;
   color: var(--accent); border: 1px solid rgba(0,255,208,.24);
   border-radius: 4px; padding: 0.32rem 0.75rem;
   text-decoration: none; background: rgba(0,255,208,.04);
   transition: background .16s, border-color .16s;
 }
-.tnav-gh:hover { background: rgba(0,255,208,.12); border-color: rgba(0,255,208,.5); }
+.sh-gh:hover { background: rgba(0,255,208,.12); border-color: rgba(0,255,208,.5); }
 
-/* FIX 2: Navbar buttons — properly centered using flexbox instead of margin-left hack */
-.nav-btn-row {
-  background: rgba(7,7,15,0.95);
-  margin-top: -58px;
-  margin-bottom: 0;
-  padding: 0;
-  position: relative;
-  z-index: 20;
-  height: 58px;
-  display: flex;
-  align-items: center;
-  /* Center the buttons in the available space after the logo (~220px) */
-  padding-left: 220px;
-  padding-right: 160px; /* approx width of badge + github button */
-  pointer-events: none; /* let the logo bar underneath receive clicks for non-button areas */
+/* ════════════════════════════════════════════
+   SECTION DIVIDERS
+════════════════════════════════════════════ */
+.section-divider {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 3.5rem var(--side) 0;
 }
-
-/* Remove all Streamlit padding/gap from the columns block inside nav-btn-row */
-.nav-btn-row [data-testid="stHorizontalBlock"] {
-  gap: 0px !important;
-  background: transparent !important;
-  height: 58px !important;
-  align-items: center !important;
-  flex-wrap: nowrap !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  width: 100% !important;
-  justify-content: center !important;
+.sd-label {
+  font-family: var(--mono); font-size: 0.5rem;
+  letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--accent); white-space: nowrap;
 }
-.nav-btn-row [data-testid="column"] {
-  padding: 0 !important;
-  min-width: 0 !important;
-  flex: 0 0 auto !important;
-  display: flex !important;
-  justify-content: center !important;
-  pointer-events: all !important;
+.sd-num {
+  font-family: var(--mono); font-size: 0.48rem;
+  letter-spacing: 0.2em; color: var(--muted);
+  white-space: nowrap;
+}
+.sd-line-accent {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(0,255,208,.4), transparent);
 }
 
-/* Style all buttons inside the nav row */
-.nav-btn-row button {
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 0.67rem !important;
-  letter-spacing: 0.08em !important;
-  text-transform: uppercase !important;
-  color: #50507a !important;
-  background: transparent !important;
-  border: 1px solid transparent !important;
-  border-radius: 4px !important;
-  padding: 0.38rem 1.2rem !important;
-  height: 32px !important;
-  min-height: 32px !important;
-  line-height: 1 !important;
-  width: auto !important;
-  white-space: nowrap !important;
-  cursor: pointer !important;
-  transition: color .16s, background .16s, border-color .16s !important;
-  box-shadow: none !important;
+.section-hero {
+  padding: 1.4rem var(--side) 2rem;
+  border-bottom: 1px solid var(--border);
 }
-.nav-btn-row button:hover {
-  color: #eeeef8 !important;
-  background: #111120 !important;
-  border-color: #2a2a46 !important;
+.sec-h {
+  font-family: var(--head);
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 800; color: var(--text);
+  letter-spacing: -0.04em; line-height: 1.04; margin-bottom: 0.5rem;
 }
-/* Active page button */
-.nav-active button {
-  color: #00ffd0 !important;
-  background: rgba(0,255,208,.07) !important;
-  border-color: rgba(0,255,208,.22) !important;
+.sec-h b { color: var(--accent); }
+.sec-p {
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--dim); line-height: 1.9; max-width: 520px;
 }
 
 /* ════════════════════════════════════════════
@@ -247,48 +220,12 @@ div[class*="manage-app"] { display: none !important; }
 .pfw { padding: 0 var(--side); }
 
 /* ════════════════════════════════════════════
-   HERO
-════════════════════════════════════════════ */
-.hero {
-  padding: 2.8rem 0 2.4rem;
-  border-bottom: 1px solid var(--border);
-  position: relative; overflow: hidden;
-}
-.hero::before {
-  content: '';
-  position: absolute; top: -100px; right: -40px;
-  width: 480px; height: 480px;
-  background: radial-gradient(circle, rgba(0,255,208,.055) 0%, transparent 60%);
-  pointer-events: none;
-}
-.hero-eye {
-  font-family: var(--mono); font-size: 0.56rem;
-  letter-spacing: 0.3em; color: var(--accent);
-  text-transform: uppercase; margin-bottom: 0.65rem;
-  display: flex; align-items: center; gap: 0.55rem;
-}
-.hero-eye::before {
-  content: ''; display: inline-block; width: 22px; height: 1px; background: var(--accent);
-}
-.hero-h1 {
-  font-family: var(--head);
-  font-size: clamp(2rem, 4vw, 3.2rem);
-  font-weight: 800; color: var(--text);
-  letter-spacing: -0.04em; line-height: 1.04; margin-bottom: 0.7rem;
-}
-.hero-h1 b { color: var(--accent); }
-.hero-p {
-  font-family: var(--mono); font-size: 0.72rem;
-  color: var(--dim); line-height: 1.9; max-width: 520px;
-}
-
-/* ════════════════════════════════════════════
    DETECTOR PANELS
 ════════════════════════════════════════════ */
 .det-panel {
   background: var(--card); border: 1px solid var(--border);
   border-radius: 10px; padding: 1.8rem;
-  margin: 1.8rem 0.7rem 2.4rem;
+  margin: 0 0.4rem 2rem;
   transition: border-color .25s, box-shadow .25s;
 }
 .det-panel:hover {
@@ -394,23 +331,10 @@ div[class*="manage-app"] { display: none !important; }
 /* ════════════════════════════════════════════
    SHARED COMPONENTS
 ════════════════════════════════════════════ */
-
-/* FIX 3: .sec heading — add proper left padding so it doesn't bleed to edge */
 .sec {
   font-family:var(--head); font-size:1.1rem; font-weight:700;
   color:var(--text); letter-spacing:-.02em; margin:2rem 0 1.1rem;
   display:flex; align-items:center; gap:.8rem;
-  padding-left: var(--side);  /* matches page padding */
-  margin-left: calc(-1 * var(--side));  /* cancel out .pw padding */
-  padding-right: var(--side);
-  margin-right: calc(-1 * var(--side));
-}
-/* When .sec is inside .pw, we don't want double padding — reset */
-.pw .sec {
-  padding-left: 0;
-  margin-left: 0;
-  padding-right: 0;
-  margin-right: 0;
 }
 .sec::after { content:''; flex:1; height:1px; background:var(--border); }
 .hr { height:1px; background:var(--border); margin:2.2rem 0; }
@@ -502,299 +426,310 @@ div[class*="manage-app"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# ════════════════════════════════════════════════════════════
-# NAVBAR
-# Approach: HTML bar (logo/badge/github) rendered first.
-# Then a .nav-btn-row div wrapping real st.columns + st.buttons,
-# pulled up via CSS margin-top: -58px to sit inside the bar.
-# The buttons are fully real Streamlit buttons — guaranteed clickable.
-# ════════════════════════════════════════════════════════════
 
-# Step 1 — HTML bar (no nav links here, just logo + right side)
+# ════════════════════════════════════════════════════════════
+# SITE HEADER
+# ════════════════════════════════════════════════════════════
 st.markdown("""
-<div class="topnav-bar">
-  <span class="tnav-logo"><span class="tnav-dot"></span>AI<em>vs</em>Real</span>
-  <div class="tnav-div"></div>
-  <div class="tnav-spacer"></div>
-  <div class="tnav-right">
-    <span class="tnav-badge">TF 2.21</span>
-    <a class="tnav-gh" href="https://github.com/nikhilsai0803/ai-vs-real-image-classifier" target="_blank">GitHub ↗</a>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-# Step 2 — Real nav buttons inside a styled wrapper
-st.markdown('<div class="nav-btn-row">', unsafe_allow_html=True)
-_c = st.columns(len(NAV_PAGES), gap="small")
-for _col, _p in zip(_c, NAV_PAGES):
-    _is_active = (_p == page)
-    _col.markdown(f'<div class="{"nav-active" if _is_active else ""}">', unsafe_allow_html=True)
-    if _col.button(_p, key=f"nav_{_p}"):
-        st.session_state.page = _p
-        st.rerun()
-    _col.markdown('</div>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Re-read page after potential rerun
-page = st.session_state.page
-
-# ════════════════════════════════════════════════════════════
-# HERO
-# ════════════════════════════════════════════════════════════
-HEROES = {
-    "Detector"   : ("Live Inference Engine",  "Image <b>Detector</b>",        "Upload any image. The selected model classifies it as AI-generated or a real photograph with a full confidence breakdown."),
-    "About"      : ("Project Overview",       "About <b>This Project</b>",    "A deep learning binary classifier distinguishing AI-generated artwork from real photographs using transfer learning on three pretrained architectures."),
-    "Tech Stack" : ("Tools & Libraries",      "Tech <b>Stack</b>",            "Every library, framework, and tool used to build, train, evaluate, and deploy this project."),
-    "How It Works":("Technical Deep Dive",    "How It <b>Works</b>",          "The full pipeline — from raw images on disk to a confident prediction — explained step by step."),
-}
-eye, h1, sub = HEROES.get(page, HEROES["Detector"])
-st.markdown(f"""
 <div class="pfw">
-  <div class="hero">
-    <div class="hero-eye">{eye}</div>
-    <div class="hero-h1">{h1}</div>
-    <div class="hero-p">{sub}</div>
+  <div class="site-header">
+    <div class="sh-eyebrow">AI Image Analysis · Transfer Learning · TF 2.21</div>
+    <div class="sh-title">AI<b>vs</b>Real<br>Image Classifier</div>
+    <div class="sh-sub">A deep learning binary classifier that distinguishes AI-generated artwork from real photographs — using fine-tuned MobileNetV2, EfficientNetB0, and NASNetMobile.</div>
+    <div class="sh-meta">
+      <span class="sh-badge">TF 2.21</span>
+      <span class="sh-badge">Keras</span>
+      <span class="sh-badge">Streamlit</span>
+      <a class="sh-gh" href="https://github.com/nikhilsai0803/ai-vs-real-image-classifier" target="_blank">GitHub ↗</a>
+    </div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ════════════════════════════════════════════════════════════
-# PAGE 1 — DETECTOR
-# ════════════════════════════════════════════════════════════
-if page == "Detector":
-    col_l, col_r = st.columns(2, gap="medium")
-
-    with col_l:
-        st.markdown('<div class="det-panel">', unsafe_allow_html=True)
-        st.markdown('<div class="dp-label">01 · Select Model <span>— architecture</span></div>', unsafe_allow_html=True)
-
-        selected = st.selectbox("model", list(MODEL_PATHS.keys()), label_visibility="collapsed")
-        info = MODEL_INFO[selected]
-        st.markdown(f"""
-        <div class="mpill-row">
-          <div class="mpill-dot"></div>
-          <div class="mpill-name">{selected}</div>
-          <span class="mpill-tag">Fine-tuned</span>
-          <span class="mpill-tag">ImageNet</span>
-        </div>
-        <div class="mdesc">{info['desc']}&nbsp;&nbsp;<span style="color:var(--text)">{info['params']} params · {info['speed']}</span></div>
-        """, unsafe_allow_html=True)
-
-        model = load_model(selected)
-        if model is None:
-            st.error(f"**Model not found:** `{MODEL_PATHS[selected]}`\n\nRun the training notebook to generate `classifier_outputs/`.")
-            st.stop()
-
-        st.markdown('<div class="dp-label" style="margin-top:.6rem;">02 · Upload Image <span>— jpg · png · webp</span></div>', unsafe_allow_html=True)
-        uploaded = st.file_uploader("img", type=["jpg","jpeg","png","webp"], label_visibility="collapsed")
-
-        if uploaded:
-            pil_img = Image.open(io.BytesIO(uploaded.read()))
-            w, h = pil_img.size
-            st.markdown('<div class="img-box">', unsafe_allow_html=True)
-            st.image(pil_img, use_container_width=True)
-            st.markdown(f'<div class="img-meta"><span>{uploaded.name}</span><span>{w}×{h}px</span><span>{pil_img.mode}</span></div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with col_r:
-        st.markdown('<div class="det-panel right">', unsafe_allow_html=True)
-        st.markdown('<div class="dp-label">03 · Result <span>— classification output</span></div>', unsafe_allow_html=True)
-
-        if uploaded:
-            with st.spinner("Analysing…"):
-                tensor = preprocess(pil_img, selected)
-                res    = predict(model, tensor)
-
-            label, conf    = res["label"], res["conf"]
-            raw, uncertain = res["raw"], res["uncertain"]
-            ai_pct, rpct   = res["ai_pct"], res["real_pct"]
-
-            if uncertain:         cls, icon, vc = "unsure", "⚠️", "unsure"
-            elif "Real" in label: cls, icon, vc = "real",   "✅", "real"
-            else:                 cls, icon, vc = "fake",   "🤖", "fake"
-
-            warn_html = '<div class="warn-badge">⚠ LOW CONFIDENCE — result may be unreliable</div>' if uncertain else ""
-
-            st.markdown(f"""
-            <div class="result {cls}">
-              <div class="verd-lbl">Verdict</div>
-              <div style="font-size:2rem;margin:.25rem 0;">{icon}</div>
-              <div class="verd {vc}">{label}</div>
-              <div class="verd-sub">Confidence: {conf}% &nbsp;·&nbsp; Raw sigmoid: {raw:.4f}</div>
-              {warn_html}
-              <div class="brow"><span>🤖 AI-Generated</span><span>{ai_pct}%</span></div>
-              <div class="btrack"><div class="bfill br" style="width:{ai_pct}%"></div></div>
-              <div class="brow"><span>📷 Real Photo</span><span>{rpct}%</span></div>
-              <div class="btrack"><div class="bfill bg" style="width:{rpct}%"></div></div>
-              <div class="scores">
-                <div class="sc"><span class="sc-v">{raw:.4f}</span><span class="sc-l">Raw Score</span></div>
-                <div class="sc"><span class="sc-v">{conf}%</span><span class="sc-l">Confidence</span></div>
-                <div class="sc"><span class="sc-v" style="font-size:.6rem;">{selected}</span><span class="sc-l">Model</span></div>
-              </div>
-            </div>
-            <div class="info-card">
-              <div class="card-lbl">How to read this</div>
-              <div class="card-p">Score &gt; 0.5 → <span style="color:var(--green)">Real Photo</span>&nbsp;|&nbsp;Score &lt; 0.5 → <span style="color:var(--red)">AI-Generated</span><br>
-              Confidence below <strong style="color:var(--amber)">85%</strong> is flagged as uncertain.</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown("""
-            <div class="empty">
-              <div class="empty-icon">🧿</div>
-              <div class="empty-t">Awaiting Image</div>
-              <div class="empty-s">Upload a JPG, PNG, or WEBP in the left panel to run inference</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
-# PAGE 2 — ABOUT
+# SECTION 1 — DETECTOR
 # ════════════════════════════════════════════════════════════
-elif page == "About":
-    st.markdown('<div class="pw">', unsafe_allow_html=True)
-    st.markdown("""
-    <div class="stats">
-      <div class="stat"><span class="stat-v" style="color:var(--accent)">~4.7K</span><span class="stat-l">Training Images</span></div>
-      <div class="stat"><span class="stat-v" style="color:var(--purple)">3</span><span class="stat-l">Models Trained</span></div>
-      <div class="stat"><span class="stat-v" style="color:var(--green)">2</span><span class="stat-l">Training Phases</span></div>
-      <div class="stat"><span class="stat-v" style="color:var(--amber)">85%</span><span class="stat-l">Confidence Threshold</span></div>
+st.markdown("""
+<div class="section-divider">
+  <div class="sd-label">Detector</div>
+  <div class="sd-line-accent"></div>
+  <div class="sd-num">01 / 04</div>
+</div>
+<div class="pfw">
+  <div class="section-hero">
+    <div class="sec-h">Image <b>Detector</b></div>
+    <div class="sec-p">Upload any image. The selected model classifies it as AI-generated or a real photograph with a full confidence breakdown.</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+col_l, col_r = st.columns(2, gap="medium")
+
+with col_l:
+    st.markdown('<div class="det-panel">', unsafe_allow_html=True)
+    st.markdown('<div class="dp-label">01 · Select Model <span>— architecture</span></div>', unsafe_allow_html=True)
+
+    selected = st.selectbox("model", list(MODEL_PATHS.keys()), label_visibility="collapsed")
+    info = MODEL_INFO[selected]
+    st.markdown(f"""
+    <div class="mpill-row">
+      <div class="mpill-dot"></div>
+      <div class="mpill-name">{selected}</div>
+      <span class="mpill-tag">Fine-tuned</span>
+      <span class="mpill-tag">ImageNet</span>
     </div>
+    <div class="mdesc">{info['desc']}&nbsp;&nbsp;<span style="color:var(--text)">{info['params']} params · {info['speed']}</span></div>
     """, unsafe_allow_html=True)
-    c1, c2 = st.columns(2, gap="medium")
-    with c1:
-        st.markdown("""
-        <div class="card a">
-          <div class="card-lbl">The Problem</div>
-          <div class="card-h">Why Does This Matter?</div>
-          <div class="card-p">AI-generated images have become indistinguishable from real photographs. Tools like Midjourney, DALL·E, and Stable Diffusion raise concerns around misinformation, copyright, and digital trust.<br><br>This classifier detects differences at a feature level — patterns the human eye cannot perceive.</div>
-          <div class="tags"><span class="tag ta">Binary Classification</span><span class="tag tp">Computer Vision</span></div>
-        </div>
-        <div class="card g">
-          <div class="card-lbl">Dataset</div>
-          <div class="card-h">Training Data</div>
-          <div class="card-p">
-            <table class="tbl">
-              <tr><td>Source</td><td>Kaggle · tristanzhang32</td></tr>
-              <tr><td>AI Images</td><td>~2,300 AI-generated artworks</td></tr>
-              <tr><td>Real Images</td><td>~2,400 real photographs</td></tr>
-              <tr><td>Split</td><td>70% Train · 15% Val · 15% Test</td></tr>
-              <tr><td>Validation</td><td>Corrupt files removed before training</td></tr>
-            </table>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-    with c2:
-        st.markdown("""
-        <div class="card p">
-          <div class="card-lbl">Approach</div>
-          <div class="card-h">Transfer Learning Strategy</div>
-          <div class="card-p">Models pre-trained on ImageNet already know how to detect edges, textures, shapes, and complex visual patterns.<br><br>We fine-tune them to learn AI-art artefacts: synthetic gradients, GAN noise signatures, unnatural smoothness — things invisible to human eyes.</div>
-          <div class="tags"><span class="tag tp">Transfer Learning</span><span class="tag tg">Fine-tuning</span><span class="tag tam">ImageNet</span></div>
-        </div>
-        <div class="card am">
-          <div class="card-lbl">Key Fixes Applied</div>
-          <div class="card-h">What Made It Work</div>
-          <div class="card-p">
-            <table class="tbl">
-              <tr><td>Preprocessing</td><td>Each model uses its own <code style="color:var(--accent)">preprocess_input</code> — no manual /255</td></tr>
-              <tr><td>Fine-tuning</td><td>Only last 30 layers unfrozen — not the full base</td></tr>
-              <tr><td>Callbacks</td><td>Fresh EarlyStopping per training phase</td></tr>
-              <tr><td>Validation</td><td>Corrupt images removed at startup</td></tr>
-            </table>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-    st.markdown('<div class="hr"></div><div class="sec">Project Goals</div>', unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3, gap="medium")
-    with c1:
-        st.markdown("""<div class="card"><div style="font-size:1.6rem;margin-bottom:.5rem;">🎯</div>
-        <div class="card-h">Accurate Classification</div>
-        <div class="card-p">Learn genuine visual features — not brightness or colour shortcuts — to reliably separate AI from real.</div></div>""", unsafe_allow_html=True)
-    with c2:
-        st.markdown("""<div class="card"><div style="font-size:1.6rem;margin-bottom:.5rem;">⚡</div>
-        <div class="card-h">Lightweight & Fast</div>
-        <div class="card-p">Mobile-scale architectures so inference runs in seconds even on CPU — no GPU required.</div></div>""", unsafe_allow_html=True)
-    with c3:
-        st.markdown("""<div class="card"><div style="font-size:1.6rem;margin-bottom:.5rem;">🌐</div>
-        <div class="card-h">Deployable UI</div>
-        <div class="card-p">A polished web interface anyone can use — no code required. Upload, click, get your answer.</div></div>""", unsafe_allow_html=True)
+
+    model = load_model(selected)
+    if model is None:
+        st.error(f"**Model not found:** `{MODEL_PATHS[selected]}`\n\nRun the training notebook to generate `classifier_outputs/`.")
+        st.stop()
+
+    st.markdown('<div class="dp-label" style="margin-top:.6rem;">02 · Upload Image <span>— jpg · png · webp</span></div>', unsafe_allow_html=True)
+    uploaded = st.file_uploader("img", type=["jpg","jpeg","png","webp"], label_visibility="collapsed")
+
+    if uploaded:
+        pil_img = Image.open(io.BytesIO(uploaded.read()))
+        w, h = pil_img.size
+        st.markdown('<div class="img-box">', unsafe_allow_html=True)
+        st.image(pil_img, use_container_width=True)
+        st.markdown(f'<div class="img-meta"><span>{uploaded.name}</span><span>{w}×{h}px</span><span>{pil_img.mode}</span></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
     st.markdown('</div>', unsafe_allow_html=True)
 
+with col_r:
+    st.markdown('<div class="det-panel right">', unsafe_allow_html=True)
+    st.markdown('<div class="dp-label">03 · Result <span>— classification output</span></div>', unsafe_allow_html=True)
+
+    if uploaded:
+        with st.spinner("Analysing…"):
+            tensor = preprocess(pil_img, selected)
+            res    = predict(model, tensor)
+
+        label, conf    = res["label"], res["conf"]
+        raw, uncertain = res["raw"], res["uncertain"]
+        ai_pct, rpct   = res["ai_pct"], res["real_pct"]
+
+        if uncertain:         cls, icon, vc = "unsure", "⚠️", "unsure"
+        elif "Real" in label: cls, icon, vc = "real",   "✅", "real"
+        else:                 cls, icon, vc = "fake",   "🤖", "fake"
+
+        warn_html = '<div class="warn-badge">⚠ LOW CONFIDENCE — result may be unreliable</div>' if uncertain else ""
+
+        st.markdown(f"""
+        <div class="result {cls}">
+          <div class="verd-lbl">Verdict</div>
+          <div style="font-size:2rem;margin:.25rem 0;">{icon}</div>
+          <div class="verd {vc}">{label}</div>
+          <div class="verd-sub">Confidence: {conf}% &nbsp;·&nbsp; Raw sigmoid: {raw:.4f}</div>
+          {warn_html}
+          <div class="brow"><span>🤖 AI-Generated</span><span>{ai_pct}%</span></div>
+          <div class="btrack"><div class="bfill br" style="width:{ai_pct}%"></div></div>
+          <div class="brow"><span>📷 Real Photo</span><span>{rpct}%</span></div>
+          <div class="btrack"><div class="bfill bg" style="width:{rpct}%"></div></div>
+          <div class="scores">
+            <div class="sc"><span class="sc-v">{raw:.4f}</span><span class="sc-l">Raw Score</span></div>
+            <div class="sc"><span class="sc-v">{conf}%</span><span class="sc-l">Confidence</span></div>
+            <div class="sc"><span class="sc-v" style="font-size:.6rem;">{selected}</span><span class="sc-l">Model</span></div>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="card-lbl">How to read this</div>
+          <div class="card-p">Score &gt; 0.5 → <span style="color:var(--green)">Real Photo</span>&nbsp;|&nbsp;Score &lt; 0.5 → <span style="color:var(--red)">AI-Generated</span><br>
+          Confidence below <strong style="color:var(--amber)">85%</strong> is flagged as uncertain.</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="empty">
+          <div class="empty-icon">🧿</div>
+          <div class="empty-t">Awaiting Image</div>
+          <div class="empty-s">Upload a JPG, PNG, or WEBP in the left panel to run inference</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
 # ════════════════════════════════════════════════════════════
-# PAGE 3 — TECH STACK
+# SECTION 2 — ABOUT
 # ════════════════════════════════════════════════════════════
-elif page == "Tech Stack":
-    st.markdown('<div class="pw">', unsafe_allow_html=True)
-    st.markdown('<div class="sec">Core ML Framework</div>', unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3, gap="medium")
-    with c1:
-        st.markdown("""<div class="card a"><div style="font-size:1.4rem;margin-bottom:.45rem;">🧠</div>
-        <div class="card-h">TensorFlow 2.21</div>
-        <div class="card-p">Full ML lifecycle — <code style="color:var(--accent)">tf.data</code> pipelines, training loops, model saving and serving.</div>
-        <div class="tags"><span class="tag ta">Core</span><span class="tag tp">Google</span></div></div>""", unsafe_allow_html=True)
-    with c2:
-        st.markdown("""<div class="card p"><div style="font-size:1.4rem;margin-bottom:.45rem;">🔷</div>
-        <div class="card-h">Keras</div>
-        <div class="card-p">High-level API. Defines model architecture, compiles, runs training. The <code style="color:var(--accent)">applications</code> module provides all three pretrained bases.</div>
-        <div class="tags"><span class="tag tp">API</span><span class="tag ta">Built-in</span></div></div>""", unsafe_allow_html=True)
-    with c3:
-        st.markdown("""<div class="card g"><div style="font-size:1.4rem;margin-bottom:.45rem;">📦</div>
-        <div class="card-h">NumPy</div>
-        <div class="card-p">Converts PIL images to float32 arrays, stacks batches, post-processes raw sigmoid scores for display.</div>
-        <div class="tags"><span class="tag tg">Numerical</span></div></div>""", unsafe_allow_html=True)
-    st.markdown('<div class="hr"></div><div class="sec">Pretrained Architectures</div>', unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3, gap="medium")
-    with c1:
-        st.markdown("""<div class="card b"><div style="font-size:1.3rem;margin-bottom:.45rem;">📱</div>
-        <div class="card-h">MobileNetV2</div>
-        <div class="card-p"><table class="tbl">
-          <tr><td>Params</td><td>2.4M total</td></tr>
-          <tr><td>Input</td><td>[0,255] → [-1, 1]</td></tr>
-          <tr><td>Design</td><td>Depthwise separable + inverted residuals</td></tr>
-          <tr><td>Best for</td><td>Real-time mobile inference</td></tr>
-        </table></div></div>""", unsafe_allow_html=True)
-    with c2:
-        st.markdown("""<div class="card a"><div style="font-size:1.3rem;margin-bottom:.45rem;">⚖️</div>
-        <div class="card-h">EfficientNetB0</div>
-        <div class="card-p"><table class="tbl">
-          <tr><td>Params</td><td>4.2M total</td></tr>
-          <tr><td>Input</td><td>[0,255] → normalised internally</td></tr>
-          <tr><td>Design</td><td>Compound scaling: depth, width, resolution</td></tr>
-          <tr><td>Best for</td><td>Highest accuracy per parameter</td></tr>
-        </table></div></div>""", unsafe_allow_html=True)
-    with c3:
-        st.markdown("""<div class="card p"><div style="font-size:1.3rem;margin-bottom:.45rem;">🔬</div>
-        <div class="card-h">NASNetMobile</div>
-        <div class="card-p"><table class="tbl">
-          <tr><td>Params</td><td>4.4M total</td></tr>
-          <tr><td>Input</td><td>[0,255] → [-1, 1]</td></tr>
-          <tr><td>Design</td><td>Neural Architecture Search by Google</td></tr>
-          <tr><td>Best for</td><td>Robustness &amp; generalisation</td></tr>
-        </table></div></div>""", unsafe_allow_html=True)
-    st.markdown('<div class="hr"></div><div class="sec">Supporting Libraries & Deployment</div>', unsafe_allow_html=True)
-    c1, c2 = st.columns(2, gap="medium")
-    with c1:
-        st.markdown("""<div class="card"><div class="card-lbl">Data & Visualisation</div>
+st.markdown("""
+<div class="section-divider">
+  <div class="sd-label">About</div>
+  <div class="sd-line-accent"></div>
+  <div class="sd-num">02 / 04</div>
+</div>
+<div class="pfw">
+  <div class="section-hero">
+    <div class="sec-h">About <b>This Project</b></div>
+    <div class="sec-p">A deep learning binary classifier distinguishing AI-generated artwork from real photographs using transfer learning on three pretrained architectures.</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown('<div class="pw">', unsafe_allow_html=True)
+st.markdown("""
+<div class="stats">
+  <div class="stat"><span class="stat-v" style="color:var(--accent)">~4.7K</span><span class="stat-l">Training Images</span></div>
+  <div class="stat"><span class="stat-v" style="color:var(--purple)">3</span><span class="stat-l">Models Trained</span></div>
+  <div class="stat"><span class="stat-v" style="color:var(--green)">2</span><span class="stat-l">Training Phases</span></div>
+  <div class="stat"><span class="stat-v" style="color:var(--amber)">85%</span><span class="stat-l">Confidence Threshold</span></div>
+</div>
+""", unsafe_allow_html=True)
+
+c1, c2 = st.columns(2, gap="medium")
+with c1:
+    st.markdown("""
+    <div class="card a">
+      <div class="card-lbl">The Problem</div>
+      <div class="card-h">Why Does This Matter?</div>
+      <div class="card-p">AI-generated images have become indistinguishable from real photographs. Tools like Midjourney, DALL·E, and Stable Diffusion raise concerns around misinformation, copyright, and digital trust.<br><br>This classifier detects differences at a feature level — patterns the human eye cannot perceive.</div>
+      <div class="tags"><span class="tag ta">Binary Classification</span><span class="tag tp">Computer Vision</span></div>
+    </div>
+    <div class="card g">
+      <div class="card-lbl">Dataset</div>
+      <div class="card-h">Training Data</div>
+      <div class="card-p">
         <table class="tbl">
-          <tr><td>scikit-learn</td><td>train_test_split, classification_report, confusion_matrix</td></tr>
-          <tr><td>Matplotlib</td><td>Training curves, distributions, sample grids</td></tr>
-          <tr><td>Seaborn</td><td>Styled confusion matrix heatmaps</td></tr>
-          <tr><td>Pillow</td><td>Image loading and format conversion in the app</td></tr>
-        </table></div>""", unsafe_allow_html=True)
-    with c2:
-        st.markdown("""<div class="card"><div class="card-lbl">App & Deployment</div>
+          <tr><td>Source</td><td>Kaggle · tristanzhang32</td></tr>
+          <tr><td>AI Images</td><td>~2,300 AI-generated artworks</td></tr>
+          <tr><td>Real Images</td><td>~2,400 real photographs</td></tr>
+          <tr><td>Split</td><td>70% Train · 15% Val · 15% Test</td></tr>
+          <tr><td>Validation</td><td>Corrupt files removed before training</td></tr>
+        </table>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+with c2:
+    st.markdown("""
+    <div class="card p">
+      <div class="card-lbl">Approach</div>
+      <div class="card-h">Transfer Learning Strategy</div>
+      <div class="card-p">Models pre-trained on ImageNet already know how to detect edges, textures, shapes, and complex visual patterns.<br><br>We fine-tune them to learn AI-art artefacts: synthetic gradients, GAN noise signatures, unnatural smoothness — things invisible to human eyes.</div>
+      <div class="tags"><span class="tag tp">Transfer Learning</span><span class="tag tg">Fine-tuning</span><span class="tag tam">ImageNet</span></div>
+    </div>
+    <div class="card am">
+      <div class="card-lbl">Key Fixes Applied</div>
+      <div class="card-h">What Made It Work</div>
+      <div class="card-p">
         <table class="tbl">
-          <tr><td>Streamlit</td><td>Web app framework — all UI and state management</td></tr>
-          <tr><td>Streamlit Cloud</td><td>Free hosting — one-click deploy from GitHub</td></tr>
-          <tr><td>packages.txt</td><td>System deps (libgl1) for Streamlit Cloud</td></tr>
-          <tr><td>requirements.txt</td><td>All Python dependencies pinned</td></tr>
-        </table></div>""", unsafe_allow_html=True)
-    st.markdown('<div class="hr"></div><div class="sec">requirements.txt</div>', unsafe_allow_html=True)
-    st.markdown("""<div class="code"><span class="cm"># pip install -r requirements.txt</span>
+          <tr><td>Preprocessing</td><td>Each model uses its own <code style="color:var(--accent)">preprocess_input</code> — no manual /255</td></tr>
+          <tr><td>Fine-tuning</td><td>Only last 30 layers unfrozen — not the full base</td></tr>
+          <tr><td>Callbacks</td><td>Fresh EarlyStopping per training phase</td></tr>
+          <tr><td>Validation</td><td>Corrupt images removed at startup</td></tr>
+        </table>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown('<div class="sec">Project Goals</div>', unsafe_allow_html=True)
+c1, c2, c3 = st.columns(3, gap="medium")
+with c1:
+    st.markdown("""<div class="card"><div style="font-size:1.6rem;margin-bottom:.5rem;">🎯</div>
+    <div class="card-h">Accurate Classification</div>
+    <div class="card-p">Learn genuine visual features — not brightness or colour shortcuts — to reliably separate AI from real.</div></div>""", unsafe_allow_html=True)
+with c2:
+    st.markdown("""<div class="card"><div style="font-size:1.6rem;margin-bottom:.5rem;">⚡</div>
+    <div class="card-h">Lightweight & Fast</div>
+    <div class="card-p">Mobile-scale architectures so inference runs in seconds even on CPU — no GPU required.</div></div>""", unsafe_allow_html=True)
+with c3:
+    st.markdown("""<div class="card"><div style="font-size:1.6rem;margin-bottom:.5rem;">🌐</div>
+    <div class="card-h">Deployable UI</div>
+    <div class="card-p">A polished web interface anyone can use — no code required. Upload, click, get your answer.</div></div>""", unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ════════════════════════════════════════════════════════════
+# SECTION 3 — TECH STACK
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<div class="section-divider">
+  <div class="sd-label">Tech Stack</div>
+  <div class="sd-line-accent"></div>
+  <div class="sd-num">03 / 04</div>
+</div>
+<div class="pfw">
+  <div class="section-hero">
+    <div class="sec-h">Tech <b>Stack</b></div>
+    <div class="sec-p">Every library, framework, and tool used to build, train, evaluate, and deploy this project.</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown('<div class="pw">', unsafe_allow_html=True)
+st.markdown('<div class="sec">Core ML Framework</div>', unsafe_allow_html=True)
+c1, c2, c3 = st.columns(3, gap="medium")
+with c1:
+    st.markdown("""<div class="card a"><div style="font-size:1.4rem;margin-bottom:.45rem;">🧠</div>
+    <div class="card-h">TensorFlow 2.21</div>
+    <div class="card-p">Full ML lifecycle — <code style="color:var(--accent)">tf.data</code> pipelines, training loops, model saving and serving.</div>
+    <div class="tags"><span class="tag ta">Core</span><span class="tag tp">Google</span></div></div>""", unsafe_allow_html=True)
+with c2:
+    st.markdown("""<div class="card p"><div style="font-size:1.4rem;margin-bottom:.45rem;">🔷</div>
+    <div class="card-h">Keras</div>
+    <div class="card-p">High-level API. Defines model architecture, compiles, runs training. The <code style="color:var(--accent)">applications</code> module provides all three pretrained bases.</div>
+    <div class="tags"><span class="tag tp">API</span><span class="tag ta">Built-in</span></div></div>""", unsafe_allow_html=True)
+with c3:
+    st.markdown("""<div class="card g"><div style="font-size:1.4rem;margin-bottom:.45rem;">📦</div>
+    <div class="card-h">NumPy</div>
+    <div class="card-p">Converts PIL images to float32 arrays, stacks batches, post-processes raw sigmoid scores for display.</div>
+    <div class="tags"><span class="tag tg">Numerical</span></div></div>""", unsafe_allow_html=True)
+
+st.markdown('<div class="sec">Pretrained Architectures</div>', unsafe_allow_html=True)
+c1, c2, c3 = st.columns(3, gap="medium")
+with c1:
+    st.markdown("""<div class="card b"><div style="font-size:1.3rem;margin-bottom:.45rem;">📱</div>
+    <div class="card-h">MobileNetV2</div>
+    <div class="card-p"><table class="tbl">
+      <tr><td>Params</td><td>2.4M total</td></tr>
+      <tr><td>Input</td><td>[0,255] → [-1, 1]</td></tr>
+      <tr><td>Design</td><td>Depthwise separable + inverted residuals</td></tr>
+      <tr><td>Best for</td><td>Real-time mobile inference</td></tr>
+    </table></div></div>""", unsafe_allow_html=True)
+with c2:
+    st.markdown("""<div class="card a"><div style="font-size:1.3rem;margin-bottom:.45rem;">⚖️</div>
+    <div class="card-h">EfficientNetB0</div>
+    <div class="card-p"><table class="tbl">
+      <tr><td>Params</td><td>4.2M total</td></tr>
+      <tr><td>Input</td><td>[0,255] → normalised internally</td></tr>
+      <tr><td>Design</td><td>Compound scaling: depth, width, resolution</td></tr>
+      <tr><td>Best for</td><td>Highest accuracy per parameter</td></tr>
+    </table></div></div>""", unsafe_allow_html=True)
+with c3:
+    st.markdown("""<div class="card p"><div style="font-size:1.3rem;margin-bottom:.45rem;">🔬</div>
+    <div class="card-h">NASNetMobile</div>
+    <div class="card-p"><table class="tbl">
+      <tr><td>Params</td><td>4.4M total</td></tr>
+      <tr><td>Input</td><td>[0,255] → [-1, 1]</td></tr>
+      <tr><td>Design</td><td>Neural Architecture Search by Google</td></tr>
+      <tr><td>Best for</td><td>Robustness &amp; generalisation</td></tr>
+    </table></div></div>""", unsafe_allow_html=True)
+
+st.markdown('<div class="sec">Supporting Libraries & Deployment</div>', unsafe_allow_html=True)
+c1, c2 = st.columns(2, gap="medium")
+with c1:
+    st.markdown("""<div class="card"><div class="card-lbl">Data & Visualisation</div>
+    <table class="tbl">
+      <tr><td>scikit-learn</td><td>train_test_split, classification_report, confusion_matrix</td></tr>
+      <tr><td>Matplotlib</td><td>Training curves, distributions, sample grids</td></tr>
+      <tr><td>Seaborn</td><td>Styled confusion matrix heatmaps</td></tr>
+      <tr><td>Pillow</td><td>Image loading and format conversion in the app</td></tr>
+    </table></div>""", unsafe_allow_html=True)
+with c2:
+    st.markdown("""<div class="card"><div class="card-lbl">App & Deployment</div>
+    <table class="tbl">
+      <tr><td>Streamlit</td><td>Web app framework — all UI and state management</td></tr>
+      <tr><td>Streamlit Cloud</td><td>Free hosting — one-click deploy from GitHub</td></tr>
+      <tr><td>packages.txt</td><td>System deps (libgl1) for Streamlit Cloud</td></tr>
+      <tr><td>requirements.txt</td><td>All Python dependencies pinned</td></tr>
+    </table></div>""", unsafe_allow_html=True)
+
+st.markdown('<div class="sec">requirements.txt</div>', unsafe_allow_html=True)
+st.markdown("""<div class="code"><span class="cm"># pip install -r requirements.txt</span>
 
 <span class="kw">tensorflow</span>==<span class="nm">2.21.0</span>
 <span class="kw">streamlit</span>&gt;=<span class="nm">1.35.0</span>
@@ -803,60 +738,76 @@ elif page == "Tech Stack":
 <span class="kw">scikit-learn</span>&gt;=<span class="nm">1.3.0</span>
 <span class="kw">matplotlib</span>&gt;=<span class="nm">3.7.0</span>
 <span class="kw">seaborn</span>&gt;=<span class="nm">0.12.0</span></div>""", unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
 
 # ════════════════════════════════════════════════════════════
-# PAGE 4 — HOW IT WORKS
+# SECTION 4 — HOW IT WORKS
 # ════════════════════════════════════════════════════════════
-elif page == "How It Works":
-    st.markdown('<div class="pw">', unsafe_allow_html=True)
-    st.markdown('<div class="sec">Training Pipeline</div>', unsafe_allow_html=True)
-    steps = [
-        ("Image Collection & Validation",
-         "All images are scanned recursively from <code style='color:var(--accent)'>AiArtData/</code> and <code style='color:var(--accent)'>RealArt/</code>. Before training begins, every file is decoded by TensorFlow. Corrupt files, truncated JPEGs, and images smaller than 10×10px are <strong style='color:var(--red)'>detected and removed</strong> so they never cause silent failures mid-training."),
-        ("Data Split & tf.data Pipeline",
-         "Images are shuffled and split 70/15/15 (train/val/test). A <code style='color:var(--accent)'>tf.data.Dataset</code> pipeline loads images lazily on demand. Training gets light augmentation: random flip, ±10% brightness, ±15% contrast. Critical fix: images stay as <code style='color:var(--accent)'>float32 in [0, 255]</code> — <strong style='color:var(--red)'>no /255 division</strong>."),
-        ("Phase 1 — Head Training",
-         "The base model is <strong>fully frozen</strong>. Only the classification head trains: GlobalAveragePooling → BatchNorm → Dense(256) → Dropout(0.4) → Dense(64) → Dropout(0.2) → Sigmoid. Learning rate: 1e-3. EarlyStopping with patience=3. Typically converges in 5–9 epochs, reaching ~70–75% validation accuracy."),
-        ("Phase 2 — Surgical Fine-tuning",
-         "Only the <strong>last 30 layers</strong> of the base model are unfrozen. Learning rate drops to 1e-5. A <strong>fresh EarlyStopping callback</strong> is created (the Phase 1 callback had stale state). This phase teaches AI-art-specific patterns: GAN noise, synthetic gradients, unnatural smoothness."),
-        ("Evaluation & Saving",
-         "All models are evaluated on the held-out test set. Confusion matrices, precision/recall/F1, and accuracy are reported. Every graph and model is saved to <code style='color:var(--accent)'>classifier_outputs/</code> as <code style='color:var(--accent)'>.keras</code> files for serving in this app."),
-    ]
-    for i, (title, body) in enumerate(steps, 1):
-        st.markdown(f"""
-        <div class="step">
-          <div class="step-n">0{i}</div>
-          <div><div class="step-h">{title}</div><div class="step-b">{body}</div></div>
-        </div>""", unsafe_allow_html=True)
-    st.markdown('<div class="hr"></div><div class="sec">Inference Pipeline</div>', unsafe_allow_html=True)
-    c1, c2 = st.columns(2, gap="medium")
-    with c1:
-        st.markdown("""<div class="card a">
-        <div class="card-lbl">What Happens When You Upload</div>
-        <div class="card-p" style="line-height:2.3;">
-          1. PIL opens image from memory — no disk write<br>
-          2. Resized to 224×224 px<br>
-          3. Cast to float32 in [0, 255]<br>
-          4. Model-specific <code style="color:var(--accent)">preprocess_input</code> scales it<br>
-          5. Model outputs a sigmoid score in [0, 1]<br>
-          6. Score ≥ 0.5 → <span style="color:var(--green)">Real</span>&nbsp;|&nbsp;Score &lt; 0.5 → <span style="color:var(--red)">AI</span><br>
-          7. Confidence = how far score is from 0.5<br>
-          8. Result shown with bar breakdown
-        </div></div>""", unsafe_allow_html=True)
-    with c2:
-        st.markdown("""<div class="card r">
-        <div class="card-lbl">The Critical Bug We Fixed</div>
-        <div class="card-p">
-          The original code divided by 255 <em>before</em> calling <code style="color:var(--accent)">preprocess_input</code>.<br><br>
-          Each model expects [0, 255] as input:<br>
-          <span style="color:var(--green)">MobileNetV2</span> → scales to [-1, 1]<br>
-          <span style="color:var(--accent)">EfficientNetB0</span> → normalises internally<br>
-          <span style="color:var(--purple)">NASNetMobile</span> → scales to [-1, 1]<br><br>
-          Dividing first sent wrong values through the scaler — producing garbage activations. All models predicted only "Real" at <strong style="color:var(--red)">49% accuracy</strong>.
-        </div></div>""", unsafe_allow_html=True)
-    st.markdown('<div class="hr"></div><div class="sec">Key Code Fixes</div>', unsafe_allow_html=True)
-    st.markdown("""<div class="code"><span class="cm"># ❌ WRONG — caused 49% accuracy</span>
+st.markdown("""
+<div class="section-divider">
+  <div class="sd-label">How It Works</div>
+  <div class="sd-line-accent"></div>
+  <div class="sd-num">04 / 04</div>
+</div>
+<div class="pfw">
+  <div class="section-hero">
+    <div class="sec-h">How It <b>Works</b></div>
+    <div class="sec-p">The full pipeline — from raw images on disk to a confident prediction — explained step by step.</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown('<div class="pw">', unsafe_allow_html=True)
+st.markdown('<div class="sec">Training Pipeline</div>', unsafe_allow_html=True)
+steps = [
+    ("Image Collection & Validation",
+     "All images are scanned recursively from <code style='color:var(--accent)'>AiArtData/</code> and <code style='color:var(--accent)'>RealArt/</code>. Before training begins, every file is decoded by TensorFlow. Corrupt files, truncated JPEGs, and images smaller than 10×10px are <strong style='color:var(--red)'>detected and removed</strong> so they never cause silent failures mid-training."),
+    ("Data Split & tf.data Pipeline",
+     "Images are shuffled and split 70/15/15 (train/val/test). A <code style='color:var(--accent)'>tf.data.Dataset</code> pipeline loads images lazily on demand. Training gets light augmentation: random flip, ±10% brightness, ±15% contrast. Critical fix: images stay as <code style='color:var(--accent)'>float32 in [0, 255]</code> — <strong style='color:var(--red)'>no /255 division</strong>."),
+    ("Phase 1 — Head Training",
+     "The base model is <strong>fully frozen</strong>. Only the classification head trains: GlobalAveragePooling → BatchNorm → Dense(256) → Dropout(0.4) → Dense(64) → Dropout(0.2) → Sigmoid. Learning rate: 1e-3. EarlyStopping with patience=3. Typically converges in 5–9 epochs, reaching ~70–75% validation accuracy."),
+    ("Phase 2 — Surgical Fine-tuning",
+     "Only the <strong>last 30 layers</strong> of the base model are unfrozen. Learning rate drops to 1e-5. A <strong>fresh EarlyStopping callback</strong> is created (the Phase 1 callback had stale state). This phase teaches AI-art-specific patterns: GAN noise, synthetic gradients, unnatural smoothness."),
+    ("Evaluation & Saving",
+     "All models are evaluated on the held-out test set. Confusion matrices, precision/recall/F1, and accuracy are reported. Every graph and model is saved to <code style='color:var(--accent)'>classifier_outputs/</code> as <code style='color:var(--accent)'>.keras</code> files for serving in this app."),
+]
+for i, (title, body) in enumerate(steps, 1):
+    st.markdown(f"""
+    <div class="step">
+      <div class="step-n">0{i}</div>
+      <div><div class="step-h">{title}</div><div class="step-b">{body}</div></div>
+    </div>""", unsafe_allow_html=True)
+
+st.markdown('<div class="sec">Inference Pipeline</div>', unsafe_allow_html=True)
+c1, c2 = st.columns(2, gap="medium")
+with c1:
+    st.markdown("""<div class="card a">
+    <div class="card-lbl">What Happens When You Upload</div>
+    <div class="card-p" style="line-height:2.3;">
+      1. PIL opens image from memory — no disk write<br>
+      2. Resized to 224×224 px<br>
+      3. Cast to float32 in [0, 255]<br>
+      4. Model-specific <code style="color:var(--accent)">preprocess_input</code> scales it<br>
+      5. Model outputs a sigmoid score in [0, 1]<br>
+      6. Score ≥ 0.5 → <span style="color:var(--green)">Real</span>&nbsp;|&nbsp;Score &lt; 0.5 → <span style="color:var(--red)">AI</span><br>
+      7. Confidence = how far score is from 0.5<br>
+      8. Result shown with bar breakdown
+    </div></div>""", unsafe_allow_html=True)
+with c2:
+    st.markdown("""<div class="card r">
+    <div class="card-lbl">The Critical Bug We Fixed</div>
+    <div class="card-p">
+      The original code divided by 255 <em>before</em> calling <code style="color:var(--accent)">preprocess_input</code>.<br><br>
+      Each model expects [0, 255] as input:<br>
+      <span style="color:var(--green)">MobileNetV2</span> → scales to [-1, 1]<br>
+      <span style="color:var(--accent)">EfficientNetB0</span> → normalises internally<br>
+      <span style="color:var(--purple)">NASNetMobile</span> → scales to [-1, 1]<br><br>
+      Dividing first sent wrong values through the scaler — producing garbage activations. All models predicted only "Real" at <strong style="color:var(--red)">49% accuracy</strong>.
+    </div></div>""", unsafe_allow_html=True)
+
+st.markdown('<div class="sec">Key Code Fixes</div>', unsafe_allow_html=True)
+st.markdown("""<div class="code"><span class="cm"># ❌ WRONG — caused 49% accuracy</span>
 <span class="kw">def</span> <span class="fn">parse_image</span>(path, label):
     img = tf.<span class="fn">cast</span>(img, tf.float32) / <span class="nm">255.0</span>  <span class="cm"># ← breaks preprocess_input</span>
     <span class="kw">return</span> img, label
@@ -873,7 +824,8 @@ model.layers[<span class="nm">1</span>].trainable = <span class="kw">True</span>
 <span class="kw">for</span> layer <span class="kw">in</span> base.layers:        layer.trainable = <span class="kw">False</span>
 <span class="kw">for</span> layer <span class="kw">in</span> base.layers[-<span class="nm">30</span>:]:  layer.trainable = <span class="kw">True</span>
 cb_p2 = [keras.callbacks.<span class="fn">EarlyStopping</span>(monitor=<span class="st">'val_loss'</span>, patience=<span class="nm">4</span>)]</div>""", unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
 
 # ── Footer ────────────────────────────────────────────────────
 st.markdown("""
@@ -882,4 +834,3 @@ st.markdown("""
   <div class="foot-r"><a href="https://github.com/nikhilsai0803/ai-vs-real-image-classifier" target="_blank">GitHub ↗</a></div>
 </div>
 """, unsafe_allow_html=True)
-
