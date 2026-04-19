@@ -2,7 +2,7 @@
 
 > Detect AI-generated artwork from real photographs using transfer learning — MobileNetV2, EfficientNetB0, and NASNetMobile, fine-tuned with a two-phase training strategy.
 
-[![Streamlit App]([https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://YOUR_APP_URL.streamlit.app](https://ai-vs-real-image-classifier-lobkjy7skjghtvptgd8chz.streamlit.app/))
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://YOUR_APP_URL.streamlit.app)
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-2.21-FF6F00?style=flat&logo=tensorflow&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat)
@@ -13,7 +13,7 @@
 
 Upload any image and the app will tell you whether it's AI-generated or a real photograph — with a confidence score and score breakdown bar.
 
-**Live demo →** [your-app-url.streamlit.app]([https://YOUR_APP_URL.streamlit.app](https://your_app_url.streamlit.app/))
+**Live demo →** [your-app-url.streamlit.app](https://ai-vs-real-image-classifier-lobkjy7skjghtvptgd8chz.streamlit.app/)
 
 ---
 
@@ -74,7 +74,7 @@ ai-vs-real-classifier/
 
 ### 1. Clone the repo
 ```bash
-git clone https://github.com/nikhilsai0803/ai-vs-real-classifier.git
+git clone https://github.com/YOUR_USERNAME/ai-vs-real-classifier.git
 cd ai-vs-real-classifier
 ```
 
@@ -178,3 +178,4 @@ MIT — free to use, modify, and distribute.
 ---
 
 *Built with TensorFlow, Streamlit, and a lot of debugging.*
+
