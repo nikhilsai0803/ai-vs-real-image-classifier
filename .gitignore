@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+env/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Dataset — never commit raw images
+archive/
+data/
+datasets/
+
+# Model files — tracked via Git LFS (see README)
+# If you're NOT using LFS, uncomment the lines below to exclude them
+# classifier_outputs/*.keras
+
+# Graphs & outputs (optional — you can commit these)
+# classifier_outputs/*.png
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Misc
+*.log
+*.tmp
