@@ -12,6 +12,7 @@ import keras
 from tensorflow.keras import applications
 from PIL import Image
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="AI vs Real Classifier",
@@ -109,98 +110,18 @@ section[data-testid="stSidebar"] { display: none !important; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
 
-/* ════════════════════════════════════════════
-   NAVBAR
-════════════════════════════════════════════ */
-.topnav {
-  position: sticky; top: 0; z-index: 999;
-  height: 58px;
-  display: flex; align-items: center;
-  padding: 0 var(--side);
-  gap: 2.4rem;
-  background: rgba(7,7,15,0.90);
-  backdrop-filter: blur(18px) saturate(160%);
-  border-bottom: 1px solid var(--border);
-}
-.topnav::after {
-  content: '';
-  position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(0,255,208,.18) 50%, transparent 100%);
-  pointer-events: none;
-}
-
-.tnav-logo {
-  display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;
-  font-family: var(--head); font-size: 1.12rem; font-weight: 800;
-  color: var(--text); letter-spacing: -0.03em; text-decoration: none;
-  white-space: nowrap;
-}
-.tnav-logo em { color: var(--accent); font-style: normal; }
-.tnav-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--accent); box-shadow: 0 0 10px var(--accent);
-  animation: glow 2.4s ease-in-out infinite; flex-shrink: 0;
-}
-@keyframes glow {
-  0%,100% { box-shadow: 0 0 5px var(--accent); }
-  50%      { box-shadow: 0 0 16px var(--accent), 0 0 28px rgba(0,255,208,.25); }
-}
-
-.tnav-div {
-  width: 1px; height: 20px; background: var(--border2); flex-shrink: 0;
-}
-
-/* Nav buttons styled as links — no redirect */
-.tnav-links {
-  display: flex; align-items: center; gap: 0.2rem; flex: 1;
-}
-
-/* Hide streamlit button chrome, style as nav pills */
-.tnav-links .stButton button {
-  font-family: var(--mono) !important; font-size: 0.67rem !important;
-  letter-spacing: 0.08em !important; text-transform: uppercase !important;
-  color: var(--muted) !important; text-decoration: none !important;
-  border: 1px solid transparent !important; border-radius: 4px !important;
-  padding: 0.38rem 0.95rem !important;
-  background: transparent !important;
-  transition: color .16s, background .16s, border-color .16s !important;
-  cursor: pointer !important; white-space: nowrap !important;
-  height: auto !important; line-height: normal !important;
-}
-.tnav-links .stButton button:hover {
-  color: var(--text) !important; background: var(--card) !important;
-  border-color: var(--border2) !important;
-}
-
-/* Active nav button */
-.nav-active .stButton button {
-  color: var(--accent) !important;
-  background: rgba(0,255,208,.07) !important;
-  border-color: rgba(0,255,208,.22) !important;
-}
-
-.tnav-right {
-  margin-left: auto; display: flex; align-items: center;
-  gap: 0.7rem; flex-shrink: 0;
-}
-.tnav-badge {
-  font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.16em;
-  color: var(--muted); border: 1px solid var(--border2);
-  border-radius: 3px; padding: 0.2rem 0.5rem; text-transform: uppercase;
-}
-.tnav-gh {
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.06em;
-  color: var(--accent); border: 1px solid rgba(0,255,208,.24);
-  border-radius: 4px; padding: 0.32rem 0.75rem;
-  text-decoration: none; background: rgba(0,255,208,.04);
-  transition: background .16s, border-color .16s;
-}
-.tnav-gh:hover { background: rgba(0,255,208,.12); border-color: rgba(0,255,208,.5); }
-
 /* ── Streamlit column gap fix ── */
 [data-testid="stHorizontalBlock"] {
   gap: 0 !important;
   align-items: stretch !important;
+}
+
+/* Hide the invisible nav-trigger buttons completely — zero height, no gap */
+div[data-testid="stHorizontalBlock"]:first-of-type {
+  position: absolute !important;
+  width: 1px !important; height: 1px !important;
+  overflow: hidden !important; opacity: 0 !important;
+  pointer-events: none !important; clip: rect(0,0,0,0) !important;
 }
 
 /* ════════════════════════════════════════════
@@ -516,88 +437,148 @@ section[data-testid="stSidebar"] { display: none !important; }
 """, unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
-# NAVBAR — uses session_state buttons, NO href redirects
+# NAVBAR — pure HTML component with postMessage nav
 # ════════════════════════════════════════════════════════════
 NAV_PAGES = ["Detector", "About", "Tech Stack", "How It Works"]
-
 page = st.session_state.page
 
-# Logo + badge row
-st.markdown(f"""
-<nav class="topnav">
-  <span class="tnav-logo"><span class="tnav-dot"></span>AI<em>vs</em>Real</span>
-  <div class="tnav-div"></div>
-""", unsafe_allow_html=True)
+# Render the full navbar as a self-contained HTML component.
+# Clicking a nav link sends a postMessage to the parent Streamlit window,
+# which is caught by a small <script> injected via st.markdown.
+def build_nav_links(current):
+    html = ""
+    for p in NAV_PAGES:
+        active = "active" if p == current else ""
+        html += f'<a class="tnav-link {active}" onclick="navigate(\'{p}\')">{p.upper()}</a>\n'
+    return html
 
-# Inject nav buttons using Streamlit columns inside a container
-with st.container():
-    # We render the nav inside the topnav via absolute positioning trick
-    # Actually we render it just below but hide the gap with CSS
-    pass
-
-# Close the nav HTML
-st.markdown("""
-  <div class="tnav-right">
-    <span class="tnav-badge">TF 2.21</span>
-    <a class="tnav-gh" href="https://github.com/nikhilsai0803/ai-vs-real-image-classifier" target="_blank">GitHub ↗</a>
+components.html(f"""
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@300;400;500&display=swap');
+  * {{ margin:0; padding:0; box-sizing:border-box; }}
+  body {{ background: rgba(7,7,15,0.95); overflow: hidden; }}
+  nav {{
+    height: 58px; display: flex; align-items: center;
+    padding: 0 2.4rem; gap: 2rem;
+    background: rgba(7,7,15,0.92);
+    backdrop-filter: blur(18px) saturate(160%);
+    border-bottom: 1px solid #1e1e33;
+    position: relative;
+  }}
+  nav::after {{
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(0,255,208,.18) 50%, transparent 100%);
+  }}
+  .logo {{
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: 'Syne', sans-serif; font-size: 1.12rem; font-weight: 800;
+    color: #eeeef8; letter-spacing: -0.03em; white-space: nowrap; flex-shrink: 0;
+  }}
+  .logo em {{ color: #00ffd0; font-style: normal; }}
+  .dot {{
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #00ffd0; box-shadow: 0 0 10px #00ffd0;
+    animation: glow 2.4s ease-in-out infinite; flex-shrink: 0;
+  }}
+  @keyframes glow {{
+    0%,100% {{ box-shadow: 0 0 5px #00ffd0; }}
+    50%      {{ box-shadow: 0 0 16px #00ffd0, 0 0 28px rgba(0,255,208,.25); }}
+  }}
+  .div {{ width:1px; height:20px; background:#2a2a46; flex-shrink:0; }}
+  .links {{ display:flex; align-items:center; gap:0.2rem; flex:1; }}
+  .tnav-link {{
+    font-family: 'JetBrains Mono', monospace; font-size: 0.67rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: #50507a; text-decoration: none;
+    border: 1px solid transparent; border-radius: 4px;
+    padding: 0.38rem 0.95rem;
+    transition: color .16s, background .16s, border-color .16s;
+    cursor: pointer; white-space: nowrap; user-select: none;
+  }}
+  .tnav-link:hover {{ color: #eeeef8; background: #111120; border-color: #2a2a46; }}
+  .tnav-link.active {{
+    color: #00ffd0; background: rgba(0,255,208,.07);
+    border-color: rgba(0,255,208,.22);
+  }}
+  .right {{ margin-left: auto; display:flex; align-items:center; gap:0.7rem; flex-shrink:0; }}
+  .badge {{
+    font-family: 'JetBrains Mono', monospace; font-size: 0.5rem; letter-spacing: 0.16em;
+    color: #50507a; border: 1px solid #2a2a46; border-radius: 3px;
+    padding: 0.2rem 0.5rem; text-transform: uppercase;
+  }}
+  .gh {{
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.06em;
+    color: #00ffd0; border: 1px solid rgba(0,255,208,.24); border-radius: 4px;
+    padding: 0.32rem 0.75rem; text-decoration: none;
+    background: rgba(0,255,208,.04); transition: background .16s, border-color .16s;
+  }}
+  .gh:hover {{ background: rgba(0,255,208,.12); border-color: rgba(0,255,208,.5); }}
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo"><span class="dot"></span>AI<em>vs</em>Real</span>
+  <div class="div"></div>
+  <div class="links">
+    {build_nav_links(page)}
+  </div>
+  <div class="right">
+    <span class="badge">TF 2.21</span>
+    <a class="gh" href="https://github.com/nikhilsai0803/ai-vs-real-image-classifier" target="_blank">GitHub ↗</a>
   </div>
 </nav>
+<script>
+  function navigate(p) {{
+    window.parent.postMessage({{type: "streamlit:setComponentValue", value: p}}, "*");
+  }}
+</script>
+</body>
+</html>
+""", height=60, scrolling=False)
+
+# Listen for postMessage from the nav component
+# We use a hidden st.text_input driven by JS injection as the bridge
+st.markdown("""
+<script>
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'streamlit:setComponentValue') {
+    // Find all buttons and click the matching one
+    var target = e.data.value;
+    var buttons = window.parent.document.querySelectorAll('button[kind="secondary"], button');
+    buttons.forEach(function(btn) {
+      if (btn.innerText.trim().toLowerCase() === target.toLowerCase()) {
+        btn.click();
+      }
+    });
+  }
+});
+</script>
 """, unsafe_allow_html=True)
 
-# ── Streamlit nav buttons (rendered cleanly below the HTML nav) ──
-# We overlap them with the nav using CSS margin-top trick
+# Hidden session-state nav buttons (invisible, triggered by postMessage above)
+# Rendered with zero height so they don't take space
 st.markdown("""
 <style>
-/* Pull the nav-buttons row up into the navbar */
-div[data-testid="stHorizontalBlock"].nav-row-block {
-  position: relative;
-  margin-top: -52px !important;
-  margin-left: 200px !important;
-  z-index: 1000;
-  background: transparent !important;
-  gap: 0 !important;
-  padding: 0 !important;
-  max-width: 700px;
-}
-/* Target the nav button columns specifically */
-.nav-btn-col > div > div > div > button {
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 0.67rem !important;
-  letter-spacing: 0.08em !important;
-  text-transform: uppercase !important;
-  color: #50507a !important;
-  border: 1px solid transparent !important;
-  border-radius: 4px !important;
-  padding: 0.38rem 0.95rem !important;
-  background: transparent !important;
-  height: 34px !important;
-  transition: all .16s !important;
-}
-.nav-btn-col > div > div > div > button:hover {
-  color: #eeeef8 !important;
-  background: #111120 !important;
-  border-color: #2a2a46 !important;
-}
-.nav-btn-col.active-nav > div > div > div > button {
-  color: #00ffd0 !important;
-  background: rgba(0,255,208,.07) !important;
-  border-color: rgba(0,255,208,.22) !important;
+div[data-testid="stHorizontalBlock"]:has(button[data-nav="true"]) {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  overflow: hidden !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Render invisible nav buttons in a row
-nav_cols = st.columns(len(NAV_PAGES), gap="small")
-for i, (col, nav_page) in enumerate(zip(nav_cols, NAV_PAGES)):
-    is_active = (nav_page == page)
-    css_class = "nav-btn-col active-nav" if is_active else "nav-btn-col"
-    col.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
-    if col.button(nav_page, key=f"nav_{nav_page}"):
-        st.session_state.page = nav_page
+# These buttons are the actual Streamlit triggers — hidden via CSS
+_nav_cols = st.columns(len(NAV_PAGES))
+for _col, _nav_page in zip(_nav_cols, NAV_PAGES):
+    if _col.button(_nav_page, key=f"nav_{_nav_page}"):
+        st.session_state.page = _nav_page
         st.rerun()
-    col.markdown('</div>', unsafe_allow_html=True)
 
-# Re-read page after potential rerun
 page = st.session_state.page
 
 # ════════════════════════════════════════════════════════════
