@@ -882,3 +882,4 @@ st.markdown("""
   <div class="foot-r"><a href="https://github.com/nikhilsai0803/ai-vs-real-image-classifier" target="_blank">GitHub ↗</a></div>
 </div>
 """, unsafe_allow_html=True)
+
