@@ -227,6 +227,8 @@ section[data-testid="stSidebar"] { display: none !important; }
 ════════════════════════════════════════════ */
 .pw { padding: 0 var(--side); max-width: 1440px; margin: 0 auto; }
 .pfw { padding: 0 var(--side); }
+/* ... ALL OTHER CSS BELOW THIS LINE IS UNCHANGED ... */
+</style>
 
 /* ════════════════════════════════════════════
    HERO
