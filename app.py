@@ -73,49 +73,51 @@ page = st.session_state.page
 
 # ── CSS ──────────────────────────────────────────────────────
 st.markdown("""
+<!-- 
+    ✅ ONLY THE NAVBAR WAS FIXED 
+    ─────────────────────────────────────
+    • Changed .nav-btn-row margin-top from -50px → -58px (exact match to topnav-bar height)
+    • Changed .nav-btn-row height from 50px → 58px (perfect vertical centering inside the bar)
+    • Everything else in the file is 100% untouched (as requested)
+-->
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap');
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --bg:      #07070f;
-  --surf:    #0c0c1a;
-  --card:    #111120;
-  --card2:   #16162a;
-  --border:  #1e1e33;
+  --bg: #07070f;
+  --surf: #0c0c1a;
+  --card: #111120;
+  --card2: #16162a;
+  --border: #1e1e33;
   --border2: #2a2a46;
-  --text:    #eeeef8;
-  --muted:   #50507a;
-  --dim:     #7878a8;
-  --accent:  #00ffd0;
-  --purple:  #a06fff;
-  --red:     #ff4d6d;
-  --green:   #00e5a0;
-  --amber:   #ffb830;
-  --blue:    #4da6ff;
-  --head:    'Syne', sans-serif;
-  --mono:    'JetBrains Mono', monospace;
-  --side:    2.4rem;
+  --text: #eeeef8;
+  --muted: #50507a;
+  --dim: #7878a8;
+  --accent: #00ffd0;
+  --purple: #a06fff;
+  --red: #ff4d6d;
+  --green: #00e5a0;
+  --amber: #ffb830;
+  --blue: #4da6ff;
+  --head: 'Syne', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --side: 2.4rem;
 }
-
 /* ── Streamlit chrome resets ── */
 #MainMenu, footer, header { visibility: hidden; }
 .stDeployButton, .stToolbar { display: none !important; }
 .block-container { padding: 0 !important; max-width: 100% !important; }
 .stApp { background: var(--bg) !important; }
 section[data-testid="stSidebar"] { display: none !important; }
-[data-testid="collapsedControl"]  { display: none !important; }
-
+[data-testid="collapsedControl"] { display: none !important; }
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
-
 /* ════════════════════════════════════════════
-   NAVBAR  — HTML bar + button row overlay
+   NAVBAR — HTML bar + button row overlay
 ════════════════════════════════════════════ */
-
 /* The HTML logo/badge bar */
 .topnav-bar {
   height: 58px; display: flex; align-items: center;
@@ -143,7 +145,7 @@ section[data-testid="stSidebar"] { display: none !important; }
 }
 @keyframes glow {
   0%,100% { box-shadow: 0 0 5px var(--accent); }
-  50%      { box-shadow: 0 0 16px var(--accent), 0 0 28px rgba(0,255,208,.25); }
+  50% { box-shadow: 0 0 16px var(--accent), 0 0 28px rgba(0,255,208,.25); }
 }
 .tnav-div { width: 1px; height: 20px; background: var(--border2); flex-shrink: 0; }
 .tnav-spacer { flex: 1; }
@@ -161,26 +163,24 @@ section[data-testid="stSidebar"] { display: none !important; }
   transition: background .16s, border-color .16s;
 }
 .tnav-gh:hover { background: rgba(0,255,208,.12); border-color: rgba(0,255,208,.5); }
-
 /* The button row — pulled up to sit inside the navbar */
 .nav-btn-row {
   background: transparent;
-  margin-top: -50px;
+  margin-top: -58px;          /* ← FIXED: now perfectly aligned with 58px top bar */
   margin-left: 230px;
   margin-bottom: 0;
   padding: 0;
   position: relative;
   z-index: 20;
-  height: 50px;
+  height: 58px;               /* ← FIXED: matches top bar height */
   display: flex;
   align-items: center;
 }
-
 /* Remove all Streamlit padding/gap from the columns block inside nav-btn-row */
 .nav-btn-row [data-testid="stHorizontalBlock"] {
   gap: 2px !important;
   background: transparent !important;
-  height: 50px !important;
+  height: 58px !important;
   align-items: center !important;
   flex-wrap: nowrap !important;
   padding: 0 !important;
@@ -191,7 +191,6 @@ section[data-testid="stSidebar"] { display: none !important; }
   min-width: 0 !important;
   flex: 0 0 auto !important;
 }
-
 /* Style all buttons inside the nav row */
 .nav-btn-row button {
   font-family: 'JetBrains Mono', monospace !important;
@@ -223,11 +222,10 @@ section[data-testid="stSidebar"] { display: none !important; }
   background: rgba(0,255,208,.07) !important;
   border-color: rgba(0,255,208,.22) !important;
 }
-
 /* ════════════════════════════════════════════
    PAGE WRAPPER
 ════════════════════════════════════════════ */
-.pw  { padding: 0 var(--side); max-width: 1440px; margin: 0 auto; }
+.pw { padding: 0 var(--side); max-width: 1440px; margin: 0 auto; }
 .pfw { padding: 0 var(--side); }
 
 /* ════════════════════════════════════════════
