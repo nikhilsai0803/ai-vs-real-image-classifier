@@ -12,7 +12,6 @@ import keras
 from tensorflow.keras import applications
 from PIL import Image
 import streamlit as st
-import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="AI vs Real Classifier",
@@ -69,6 +68,9 @@ def predict(model, tensor):
         "uncertain": conf < UNCERTAIN_THRESH,
     }
 
+NAV_PAGES = ["Detector", "About", "Tech Stack", "How It Works"]
+page = st.session_state.page
+
 # ── CSS ──────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -110,18 +112,116 @@ section[data-testid="stSidebar"] { display: none !important; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
 
-/* ── Streamlit column gap fix ── */
-[data-testid="stHorizontalBlock"] {
-  gap: 0 !important;
-  align-items: stretch !important;
+/* ════════════════════════════════════════════
+   NAVBAR  — HTML bar + button row overlay
+════════════════════════════════════════════ */
+
+/* The HTML logo/badge bar */
+.topnav-bar {
+  height: 58px; display: flex; align-items: center;
+  padding: 0 var(--side); gap: 2.4rem;
+  background: rgba(7,7,15,0.95);
+  backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid var(--border);
+  position: relative; z-index: 10;
+}
+.topnav-bar::after {
+  content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(0,255,208,.18) 50%, transparent 100%);
+  pointer-events: none;
+}
+.tnav-logo {
+  display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;
+  font-family: var(--head); font-size: 1.12rem; font-weight: 800;
+  color: var(--text); letter-spacing: -0.03em; white-space: nowrap;
+}
+.tnav-logo em { color: var(--accent); font-style: normal; }
+.tnav-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 10px var(--accent);
+  animation: glow 2.4s ease-in-out infinite; flex-shrink: 0;
+}
+@keyframes glow {
+  0%,100% { box-shadow: 0 0 5px var(--accent); }
+  50%      { box-shadow: 0 0 16px var(--accent), 0 0 28px rgba(0,255,208,.25); }
+}
+.tnav-div { width: 1px; height: 20px; background: var(--border2); flex-shrink: 0; }
+.tnav-spacer { flex: 1; }
+.tnav-right { display: flex; align-items: center; gap: 0.7rem; flex-shrink: 0; }
+.tnav-badge {
+  font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.16em;
+  color: var(--muted); border: 1px solid var(--border2);
+  border-radius: 3px; padding: 0.2rem 0.5rem; text-transform: uppercase;
+}
+.tnav-gh {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.06em;
+  color: var(--accent); border: 1px solid rgba(0,255,208,.24);
+  border-radius: 4px; padding: 0.32rem 0.75rem;
+  text-decoration: none; background: rgba(0,255,208,.04);
+  transition: background .16s, border-color .16s;
+}
+.tnav-gh:hover { background: rgba(0,255,208,.12); border-color: rgba(0,255,208,.5); }
+
+/* The button row — pulled up to sit inside the navbar */
+.nav-btn-row {
+  background: transparent;
+  margin-top: -50px;
+  margin-left: 230px;
+  margin-bottom: 0;
+  padding: 0;
+  position: relative;
+  z-index: 20;
+  height: 50px;
+  display: flex;
+  align-items: center;
 }
 
-/* Hide the invisible nav-trigger buttons completely — zero height, no gap */
-div[data-testid="stHorizontalBlock"]:first-of-type {
-  position: absolute !important;
-  width: 1px !important; height: 1px !important;
-  overflow: hidden !important; opacity: 0 !important;
-  pointer-events: none !important; clip: rect(0,0,0,0) !important;
+/* Remove all Streamlit padding/gap from the columns block inside nav-btn-row */
+.nav-btn-row [data-testid="stHorizontalBlock"] {
+  gap: 2px !important;
+  background: transparent !important;
+  height: 50px !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.nav-btn-row [data-testid="column"] {
+  padding: 0 !important;
+  min-width: 0 !important;
+  flex: 0 0 auto !important;
+}
+
+/* Style all buttons inside the nav row */
+.nav-btn-row button {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.67rem !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #50507a !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 4px !important;
+  padding: 0.38rem 1rem !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  line-height: 1 !important;
+  width: auto !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  transition: color .16s, background .16s, border-color .16s !important;
+  box-shadow: none !important;
+}
+.nav-btn-row button:hover {
+  color: #eeeef8 !important;
+  background: #111120 !important;
+  border-color: #2a2a46 !important;
+}
+/* Active page button */
+.nav-active button {
+  color: #00ffd0 !important;
+  background: rgba(0,255,208,.07) !important;
+  border-color: rgba(0,255,208,.22) !important;
 }
 
 /* ════════════════════════════════════════════
@@ -167,7 +267,7 @@ div[data-testid="stHorizontalBlock"]:first-of-type {
 }
 
 /* ════════════════════════════════════════════
-   DETECTOR TWO-PANEL LAYOUT
+   DETECTOR PANELS
 ════════════════════════════════════════════ */
 .det-panel {
   background: var(--card); border: 1px solid var(--border);
@@ -192,66 +292,42 @@ div[data-testid="stHorizontalBlock"]:first-of-type {
   display: flex; gap: 0.5rem;
 }
 .dp-label span { color: var(--muted); }
-
-/* model pill */
 .mpill-row {
   display: flex; align-items: center; gap: 0.9rem;
   background: var(--card2); border: 1px solid var(--border2);
   border-radius: 6px; padding: 0.82rem 1rem; margin-bottom: 0.7rem;
   transition: border-color .2s, box-shadow .2s;
 }
-.mpill-row:hover {
-  border-color: rgba(0,255,208,.3);
-  box-shadow: 0 0 12px rgba(0,255,208,.07);
-}
+.mpill-row:hover { border-color: rgba(0,255,208,.3); box-shadow: 0 0 12px rgba(0,255,208,.07); }
 .mpill-dot {
   width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
   background: var(--accent); box-shadow: 0 0 8px var(--accent);
   animation: glow 2.4s ease-in-out infinite;
 }
-.mpill-name {
-  font-family: var(--head); font-size: 0.9rem;
-  font-weight: 700; color: var(--text); flex: 1;
-}
+.mpill-name { font-family: var(--head); font-size: 0.9rem; font-weight: 700; color: var(--text); flex: 1; }
 .mpill-tag {
-  font-family: var(--mono); font-size: 0.48rem;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--accent); border: 1px solid rgba(0,255,208,.25);
-  border-radius: 3px; padding: 0.16rem 0.48rem;
-  background: rgba(0,255,208,.05);
+  font-family: var(--mono); font-size: 0.48rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--accent); border: 1px solid rgba(0,255,208,.25); border-radius: 3px;
+  padding: 0.16rem 0.48rem; background: rgba(0,255,208,.05);
 }
-.mdesc {
-  font-family: var(--mono); font-size: 0.67rem;
-  color: var(--muted); line-height: 1.75; margin-bottom: 1.4rem;
-}
-
-/* uploaded image */
+.mdesc { font-family: var(--mono); font-size: 0.67rem; color: var(--muted); line-height: 1.75; margin-bottom: 1.4rem; }
 .img-box {
   border: 1px solid var(--border2); border-radius: 6px; overflow: hidden;
   background: var(--bg); margin: 0.6rem 0;
   transition: border-color .2s, box-shadow .2s;
 }
-.img-box:hover {
-  border-color: rgba(0,255,208,.3);
-  box-shadow: 0 0 16px rgba(0,255,208,.08);
-}
+.img-box:hover { border-color: rgba(0,255,208,.3); box-shadow: 0 0 16px rgba(0,255,208,.08); }
 .img-meta {
-  font-family: var(--mono); font-size: 0.54rem;
-  letter-spacing: 0.1em; text-transform: uppercase;
+  font-family: var(--mono); font-size: 0.54rem; letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--muted); padding: 0.45rem 0.8rem;
   border-top: 1px solid var(--border); display: flex; gap: 1rem;
 }
-
-/* result card */
 .result {
   border: 1px solid var(--border2); border-radius: 8px;
   background: var(--card2); padding: 1.6rem;
   position: relative; overflow: hidden;
   animation: up .3s ease; margin-bottom: 0.9rem;
   transition: border-color .25s, box-shadow .25s;
-}
-.result:hover {
-  box-shadow: 0 0 20px rgba(0,0,0,.3);
 }
 @keyframes up { from { opacity:0; transform:translateY(8px);} to {opacity:1;transform:translateY(0);} }
 .result::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
@@ -261,18 +337,15 @@ div[data-testid="stHorizontalBlock"]:first-of-type {
 .result.real:hover  { border-color: rgba(0,229,160,.3); box-shadow: 0 0 20px rgba(0,229,160,.07); }
 .result.fake:hover  { border-color: rgba(255,77,109,.3); box-shadow: 0 0 20px rgba(255,77,109,.07); }
 .result.unsure:hover{ border-color: rgba(255,184,48,.3); box-shadow: 0 0 20px rgba(255,184,48,.07); }
-
 .verd-lbl { font-family:var(--mono); font-size:.48rem; letter-spacing:.24em; color:var(--muted); text-transform:uppercase; }
 .verd { font-family:var(--head); font-size:2.5rem; font-weight:800; letter-spacing:-.04em; line-height:1; margin:.25rem 0; }
 .verd.real{color:var(--green);} .verd.fake{color:var(--red);} .verd.unsure{color:var(--amber);}
 .verd-sub { font-family:var(--mono); font-size:.66rem; color:var(--muted); margin-bottom:1.3rem; }
-
 .brow { display:flex; justify-content:space-between; font-family:var(--mono); font-size:.58rem; color:var(--muted); margin-bottom:.3rem; }
 .btrack { height:4px; background:var(--border); border-radius:4px; overflow:hidden; margin-bottom:.65rem; }
 .bfill  { height:100%; border-radius:4px; transition:width .6s cubic-bezier(.4,0,.2,1); }
 .bg { background:linear-gradient(90deg,var(--green),#00ffb3); }
 .br { background:linear-gradient(90deg,var(--red),#ff8099); }
-
 .scores { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.55rem; margin-top:.9rem; }
 .sc {
   background:var(--surf); border:1px solid var(--border); border-radius:5px; padding:.65rem; text-align:center;
@@ -281,7 +354,6 @@ div[data-testid="stHorizontalBlock"]:first-of-type {
 .sc:hover { border-color: rgba(0,255,208,.25); box-shadow: 0 0 10px rgba(0,255,208,.06); }
 .sc-v { font-family:var(--mono); font-size:.9rem; font-weight:500; color:var(--text); display:block; }
 .sc-l { font-family:var(--mono); font-size:.47rem; letter-spacing:.14em; color:var(--muted); text-transform:uppercase; display:block; margin-top:.22rem; }
-
 .warn-badge {
   display:inline-flex; align-items:center; gap:.4rem;
   font-family:var(--mono); font-size:.58rem; color:var(--amber);
@@ -289,14 +361,12 @@ div[data-testid="stHorizontalBlock"]:first-of-type {
   border-radius:4px; padding:.28rem .65rem; margin-bottom:.9rem;
 }
 .info-card {
-  background:var(--card); border:1px solid var(--border);
-  border-radius:6px; padding:1rem 1.1rem;
+  background:var(--card); border:1px solid var(--border); border-radius:6px; padding:1rem 1.1rem;
   transition: border-color .2s, box-shadow .2s;
 }
 .info-card:hover { border-color: rgba(0,255,208,.2); box-shadow: 0 0 12px rgba(0,255,208,.05); }
 .info-card .card-lbl { font-family:var(--mono); font-size:.48rem; letter-spacing:.22em; color:var(--muted); text-transform:uppercase; margin-bottom:.45rem; }
 .info-card .card-p   { font-family:var(--mono); font-size:.68rem; color:var(--dim); line-height:1.85; }
-
 .empty {
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   min-height:360px; text-align:center; gap:.8rem;
@@ -315,17 +385,12 @@ div[data-testid="stHorizontalBlock"]:first-of-type {
 }
 .sec::after { content:''; flex:1; height:1px; background:var(--border); }
 .hr { height:1px; background:var(--border); margin:2.2rem 0; }
-
 .card {
   background:var(--card); border:1px solid var(--border);
   border-radius:8px; padding:1.4rem 1.5rem; margin-bottom:.9rem;
   transition: border-color .22s, box-shadow .22s, transform .22s;
 }
-.card:hover {
-  border-color: rgba(0,255,208,.22);
-  box-shadow: 0 0 22px rgba(0,255,208,.06), 0 4px 16px rgba(0,0,0,.25);
-  transform: translateY(-2px);
-}
+.card:hover { border-color: rgba(0,255,208,.22); box-shadow: 0 0 22px rgba(0,255,208,.06), 0 4px 16px rgba(0,0,0,.25); transform: translateY(-2px); }
 .card.a{ border-top:2px solid var(--accent); }
 .card.a:hover { border-color: rgba(0,255,208,.4); box-shadow: 0 0 22px rgba(0,255,208,.1), 0 4px 16px rgba(0,0,0,.25); }
 .card.p{ border-top:2px solid var(--purple); }
@@ -338,26 +403,18 @@ div[data-testid="stHorizontalBlock"]:first-of-type {
 .card.am:hover { border-color: rgba(255,184,48,.4); box-shadow: 0 0 22px rgba(255,184,48,.1), 0 4px 16px rgba(0,0,0,.25); }
 .card.b{ border-top:2px solid var(--blue); }
 .card.b:hover { border-color: rgba(77,166,255,.4); box-shadow: 0 0 22px rgba(77,166,255,.1), 0 4px 16px rgba(0,0,0,.25); }
-
 .card-lbl { font-family:var(--mono); font-size:.5rem; letter-spacing:.24em; color:var(--muted); text-transform:uppercase; margin-bottom:.55rem; }
 .card-h   { font-family:var(--head); font-size:.96rem; font-weight:700; color:var(--text); margin-bottom:.45rem; }
 .card-p   { font-family:var(--mono); font-size:.7rem; color:var(--dim); line-height:1.9; }
-
 .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:.9rem; margin:1.8rem 0; }
 .stat {
   background:var(--card); border:1px solid var(--border); border-radius:8px;
   padding:1.3rem; text-align:center;
-  transition: border-color .22s, box-shadow .22s, transform .22s;
-  position:relative; overflow:hidden;
+  transition: border-color .22s, box-shadow .22s, transform .22s; position:relative; overflow:hidden;
 }
-.stat:hover {
-  border-color: rgba(0,255,208,.3);
-  box-shadow: 0 0 28px rgba(0,255,208,.09), 0 4px 18px rgba(0,0,0,.3);
-  transform: translateY(-3px);
-}
+.stat:hover { border-color: rgba(0,255,208,.3); box-shadow: 0 0 28px rgba(0,255,208,.09), 0 4px 18px rgba(0,0,0,.3); transform: translateY(-3px); }
 .stat-v { font-family:var(--head); font-size:2.1rem; font-weight:800; line-height:1; display:block; margin-bottom:.35rem; }
 .stat-l { font-family:var(--mono); font-size:.5rem; letter-spacing:.18em; color:var(--muted); text-transform:uppercase; }
-
 .tags { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.8rem; }
 .tag  { font-family:var(--mono); font-size:.52rem; letter-spacing:.1em; text-transform:uppercase; border-radius:3px; padding:.18rem .55rem; border:1px solid; }
 .ta  { color:var(--accent); border-color:rgba(0,255,208,.3);  background:rgba(0,255,208,.06); }
@@ -365,22 +422,15 @@ div[data-testid="stHorizontalBlock"]:first-of-type {
 .tg  { color:var(--green);  border-color:rgba(0,229,160,.3);   background:rgba(0,229,160,.06); }
 .tam { color:var(--amber);  border-color:rgba(255,184,48,.3);  background:rgba(255,184,48,.06); }
 .tb  { color:var(--blue);   border-color:rgba(77,166,255,.3);  background:rgba(77,166,255,.06); }
-
 .step {
   display:flex; gap:1.3rem; padding:1.3rem 1.4rem; background:var(--card);
-  border:1px solid var(--border); border-radius:8px;
-  margin-bottom:.85rem; align-items:flex-start;
+  border:1px solid var(--border); border-radius:8px; margin-bottom:.85rem; align-items:flex-start;
   transition: border-color .22s, box-shadow .22s, transform .22s;
 }
-.step:hover {
-  border-color: rgba(0,255,208,.28);
-  box-shadow: 0 0 20px rgba(0,255,208,.07), 0 4px 14px rgba(0,0,0,.25);
-  transform: translateX(4px);
-}
+.step:hover { border-color: rgba(0,255,208,.28); box-shadow: 0 0 20px rgba(0,255,208,.07), 0 4px 14px rgba(0,0,0,.25); transform: translateX(4px); }
 .step-n { font-family:var(--head); font-size:1.9rem; font-weight:800; color:var(--border2); line-height:1; min-width:2.2rem; text-align:center; padding-top:.05rem; }
 .step-h { font-family:var(--head); font-size:.92rem; font-weight:700; color:var(--text); margin-bottom:.35rem; }
 .step-b { font-family:var(--mono); font-size:.69rem; color:var(--dim); line-height:1.9; }
-
 .code {
   background:#050510; border:1px solid var(--border);
   border-left:3px solid var(--accent); border-radius:6px;
@@ -388,19 +438,13 @@ div[data-testid="stHorizontalBlock"]:first-of-type {
   color:#8080b0; line-height:2.1; overflow-x:auto; white-space:pre; margin:1rem 0;
   transition: border-color .2s, box-shadow .2s;
 }
-.code:hover {
-  border-color: rgba(0,255,208,.3);
-  box-shadow: 0 0 18px rgba(0,255,208,.05);
-}
+.code:hover { border-color: rgba(0,255,208,.3); box-shadow: 0 0 18px rgba(0,255,208,.05); }
 .kw{color:var(--purple);} .fn{color:var(--accent);} .st{color:var(--green);} .cm{color:#35355a;} .nm{color:var(--amber);}
-
 .tbl { width:100%; border-collapse:collapse; }
 .tbl td { font-family:var(--mono); font-size:.68rem; padding:.62rem .7rem; border-bottom:1px solid var(--border); vertical-align:top; }
 .tbl td:first-child { color:var(--muted); width:36%; font-size:.57rem; letter-spacing:.07em; text-transform:uppercase; }
 .tbl td:last-child  { color:var(--text); }
 .tbl tr:hover td { background: rgba(0,255,208,.03); }
-
-/* footer */
 .foot {
   border-top:1px solid var(--border); padding:1.1rem var(--side);
   display:flex; justify-content:space-between; align-items:center;
@@ -416,20 +460,13 @@ div[data-testid="stHorizontalBlock"]:first-of-type {
   font-family:var(--mono) !important; font-size:.82rem !important;
   transition: border-color .2s, box-shadow .2s !important;
 }
-.stSelectbox > div > div:hover {
-  border-color: rgba(0,255,208,.35) !important;
-  box-shadow: 0 0 12px rgba(0,255,208,.08) !important;
-}
+.stSelectbox > div > div:hover { border-color: rgba(0,255,208,.35) !important; box-shadow: 0 0 12px rgba(0,255,208,.08) !important; }
 .stSelectbox label { color:var(--muted) !important; font-family:var(--mono) !important; font-size:.56rem !important; letter-spacing:.16em !important; text-transform:uppercase !important; }
 .stFileUploader > div {
   border:1px dashed var(--border2) !important; border-radius:7px !important;
-  background:var(--card2) !important;
-  transition: border-color .2s, box-shadow .2s !important;
+  background:var(--card2) !important; transition: border-color .2s, box-shadow .2s !important;
 }
-.stFileUploader > div:hover {
-  border-color:var(--accent) !important;
-  box-shadow: 0 0 18px rgba(0,255,208,.1) !important;
-}
+.stFileUploader > div:hover { border-color:var(--accent) !important; box-shadow: 0 0 18px rgba(0,255,208,.1) !important; }
 .stFileUploader label { color:var(--muted) !important; font-family:var(--mono) !important; font-size:.56rem !important; letter-spacing:.16em !important; text-transform:uppercase !important; }
 .stImage img { border-radius:0 !important; display:block !important; }
 .stSpinner > div { border-top-color:var(--accent) !important; }
@@ -437,148 +474,39 @@ div[data-testid="stHorizontalBlock"]:first-of-type {
 """, unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
-# NAVBAR — pure HTML component with postMessage nav
+# NAVBAR
+# Approach: HTML bar (logo/badge/github) rendered first.
+# Then a .nav-btn-row div wrapping real st.columns + st.buttons,
+# pulled up via CSS margin-top: -50px to sit inside the bar.
+# The buttons are fully real Streamlit buttons — guaranteed clickable.
 # ════════════════════════════════════════════════════════════
-NAV_PAGES = ["Detector", "About", "Tech Stack", "How It Works"]
-page = st.session_state.page
 
-# Render the full navbar as a self-contained HTML component.
-# Clicking a nav link sends a postMessage to the parent Streamlit window,
-# which is caught by a small <script> injected via st.markdown.
-def build_nav_links(current):
-    html = ""
-    for p in NAV_PAGES:
-        active = "active" if p == current else ""
-        html += f'<a class="tnav-link {active}" onclick="navigate(\'{p}\')">{p.upper()}</a>\n'
-    return html
-
-components.html(f"""
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@300;400;500&display=swap');
-  * {{ margin:0; padding:0; box-sizing:border-box; }}
-  body {{ background: rgba(7,7,15,0.95); overflow: hidden; }}
-  nav {{
-    height: 58px; display: flex; align-items: center;
-    padding: 0 2.4rem; gap: 2rem;
-    background: rgba(7,7,15,0.92);
-    backdrop-filter: blur(18px) saturate(160%);
-    border-bottom: 1px solid #1e1e33;
-    position: relative;
-  }}
-  nav::after {{
-    content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent 0%, rgba(0,255,208,.18) 50%, transparent 100%);
-  }}
-  .logo {{
-    display: flex; align-items: center; gap: 0.5rem;
-    font-family: 'Syne', sans-serif; font-size: 1.12rem; font-weight: 800;
-    color: #eeeef8; letter-spacing: -0.03em; white-space: nowrap; flex-shrink: 0;
-  }}
-  .logo em {{ color: #00ffd0; font-style: normal; }}
-  .dot {{
-    width: 7px; height: 7px; border-radius: 50%;
-    background: #00ffd0; box-shadow: 0 0 10px #00ffd0;
-    animation: glow 2.4s ease-in-out infinite; flex-shrink: 0;
-  }}
-  @keyframes glow {{
-    0%,100% {{ box-shadow: 0 0 5px #00ffd0; }}
-    50%      {{ box-shadow: 0 0 16px #00ffd0, 0 0 28px rgba(0,255,208,.25); }}
-  }}
-  .div {{ width:1px; height:20px; background:#2a2a46; flex-shrink:0; }}
-  .links {{ display:flex; align-items:center; gap:0.2rem; flex:1; }}
-  .tnav-link {{
-    font-family: 'JetBrains Mono', monospace; font-size: 0.67rem;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    color: #50507a; text-decoration: none;
-    border: 1px solid transparent; border-radius: 4px;
-    padding: 0.38rem 0.95rem;
-    transition: color .16s, background .16s, border-color .16s;
-    cursor: pointer; white-space: nowrap; user-select: none;
-  }}
-  .tnav-link:hover {{ color: #eeeef8; background: #111120; border-color: #2a2a46; }}
-  .tnav-link.active {{
-    color: #00ffd0; background: rgba(0,255,208,.07);
-    border-color: rgba(0,255,208,.22);
-  }}
-  .right {{ margin-left: auto; display:flex; align-items:center; gap:0.7rem; flex-shrink:0; }}
-  .badge {{
-    font-family: 'JetBrains Mono', monospace; font-size: 0.5rem; letter-spacing: 0.16em;
-    color: #50507a; border: 1px solid #2a2a46; border-radius: 3px;
-    padding: 0.2rem 0.5rem; text-transform: uppercase;
-  }}
-  .gh {{
-    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.06em;
-    color: #00ffd0; border: 1px solid rgba(0,255,208,.24); border-radius: 4px;
-    padding: 0.32rem 0.75rem; text-decoration: none;
-    background: rgba(0,255,208,.04); transition: background .16s, border-color .16s;
-  }}
-  .gh:hover {{ background: rgba(0,255,208,.12); border-color: rgba(0,255,208,.5); }}
-</style>
-</head>
-<body>
-<nav>
-  <span class="logo"><span class="dot"></span>AI<em>vs</em>Real</span>
-  <div class="div"></div>
-  <div class="links">
-    {build_nav_links(page)}
-  </div>
-  <div class="right">
-    <span class="badge">TF 2.21</span>
-    <a class="gh" href="https://github.com/nikhilsai0803/ai-vs-real-image-classifier" target="_blank">GitHub ↗</a>
-  </div>
-</nav>
-<script>
-  function navigate(p) {{
-    window.parent.postMessage({{type: "streamlit:setComponentValue", value: p}}, "*");
-  }}
-</script>
-</body>
-</html>
-""", height=60, scrolling=False)
-
-# Listen for postMessage from the nav component
-# We use a hidden st.text_input driven by JS injection as the bridge
+# Step 1 — HTML bar (no nav links here, just logo + right side)
 st.markdown("""
-<script>
-window.addEventListener('message', function(e) {
-  if (e.data && e.data.type === 'streamlit:setComponentValue') {
-    // Find all buttons and click the matching one
-    var target = e.data.value;
-    var buttons = window.parent.document.querySelectorAll('button[kind="secondary"], button');
-    buttons.forEach(function(btn) {
-      if (btn.innerText.trim().toLowerCase() === target.toLowerCase()) {
-        btn.click();
-      }
-    });
-  }
-});
-</script>
+<div class="topnav-bar">
+  <span class="tnav-logo"><span class="tnav-dot"></span>AI<em>vs</em>Real</span>
+  <div class="tnav-div"></div>
+  <div class="tnav-spacer"></div>
+  <div class="tnav-right">
+    <span class="tnav-badge">TF 2.21</span>
+    <a class="tnav-gh" href="https://github.com/nikhilsai0803/ai-vs-real-image-classifier" target="_blank">GitHub ↗</a>
+  </div>
+</div>
 """, unsafe_allow_html=True)
 
-# Hidden session-state nav buttons (invisible, triggered by postMessage above)
-# Rendered with zero height so they don't take space
-st.markdown("""
-<style>
-div[data-testid="stHorizontalBlock"]:has(button[data-nav="true"]) {
-  position: absolute !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  height: 0 !important;
-  overflow: hidden !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# These buttons are the actual Streamlit triggers — hidden via CSS
-_nav_cols = st.columns(len(NAV_PAGES))
-for _col, _nav_page in zip(_nav_cols, NAV_PAGES):
-    if _col.button(_nav_page, key=f"nav_{_nav_page}"):
-        st.session_state.page = _nav_page
+# Step 2 — Real nav buttons inside a styled wrapper
+st.markdown('<div class="nav-btn-row">', unsafe_allow_html=True)
+_c = st.columns(len(NAV_PAGES), gap="small")
+for _col, _p in zip(_c, NAV_PAGES):
+    _is_active = (_p == page)
+    _col.markdown(f'<div class="{"nav-active" if _is_active else ""}">', unsafe_allow_html=True)
+    if _col.button(_p, key=f"nav_{_p}"):
+        st.session_state.page = _p
         st.rerun()
+    _col.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
+# Re-read page after potential rerun
 page = st.session_state.page
 
 # ════════════════════════════════════════════════════════════
@@ -699,7 +627,6 @@ if page == "Detector":
 # ════════════════════════════════════════════════════════════
 elif page == "About":
     st.markdown('<div class="pw">', unsafe_allow_html=True)
-
     st.markdown("""
     <div class="stats">
       <div class="stat"><span class="stat-v" style="color:var(--accent)">~4.7K</span><span class="stat-l">Training Images</span></div>
@@ -708,7 +635,6 @@ elif page == "About":
       <div class="stat"><span class="stat-v" style="color:var(--amber)">85%</span><span class="stat-l">Confidence Threshold</span></div>
     </div>
     """, unsafe_allow_html=True)
-
     c1, c2 = st.columns(2, gap="medium")
     with c1:
         st.markdown("""
@@ -753,7 +679,6 @@ elif page == "About":
           </div>
         </div>
         """, unsafe_allow_html=True)
-
     st.markdown('<div class="hr"></div><div class="sec">Project Goals</div>', unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3, gap="medium")
     with c1:
@@ -768,7 +693,6 @@ elif page == "About":
         st.markdown("""<div class="card"><div style="font-size:1.6rem;margin-bottom:.5rem;">🌐</div>
         <div class="card-h">Deployable UI</div>
         <div class="card-p">A polished web interface anyone can use — no code required. Upload, click, get your answer.</div></div>""", unsafe_allow_html=True)
-
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
@@ -777,7 +701,6 @@ elif page == "About":
 elif page == "Tech Stack":
     st.markdown('<div class="pw">', unsafe_allow_html=True)
     st.markdown('<div class="sec">Core ML Framework</div>', unsafe_allow_html=True)
-
     c1, c2, c3 = st.columns(3, gap="medium")
     with c1:
         st.markdown("""<div class="card a"><div style="font-size:1.4rem;margin-bottom:.45rem;">🧠</div>
@@ -794,7 +717,6 @@ elif page == "Tech Stack":
         <div class="card-h">NumPy</div>
         <div class="card-p">Converts PIL images to float32 arrays, stacks batches, post-processes raw sigmoid scores for display.</div>
         <div class="tags"><span class="tag tg">Numerical</span></div></div>""", unsafe_allow_html=True)
-
     st.markdown('<div class="hr"></div><div class="sec">Pretrained Architectures</div>', unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3, gap="medium")
     with c1:
@@ -824,7 +746,6 @@ elif page == "Tech Stack":
           <tr><td>Design</td><td>Neural Architecture Search by Google</td></tr>
           <tr><td>Best for</td><td>Robustness &amp; generalisation</td></tr>
         </table></div></div>""", unsafe_allow_html=True)
-
     st.markdown('<div class="hr"></div><div class="sec">Supporting Libraries & Deployment</div>', unsafe_allow_html=True)
     c1, c2 = st.columns(2, gap="medium")
     with c1:
@@ -843,7 +764,6 @@ elif page == "Tech Stack":
           <tr><td>packages.txt</td><td>System deps (libgl1) for Streamlit Cloud</td></tr>
           <tr><td>requirements.txt</td><td>All Python dependencies pinned</td></tr>
         </table></div>""", unsafe_allow_html=True)
-
     st.markdown('<div class="hr"></div><div class="sec">requirements.txt</div>', unsafe_allow_html=True)
     st.markdown("""<div class="code"><span class="cm"># pip install -r requirements.txt</span>
 
@@ -854,7 +774,6 @@ elif page == "Tech Stack":
 <span class="kw">scikit-learn</span>&gt;=<span class="nm">1.3.0</span>
 <span class="kw">matplotlib</span>&gt;=<span class="nm">3.7.0</span>
 <span class="kw">seaborn</span>&gt;=<span class="nm">0.12.0</span></div>""", unsafe_allow_html=True)
-
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
@@ -863,7 +782,6 @@ elif page == "Tech Stack":
 elif page == "How It Works":
     st.markdown('<div class="pw">', unsafe_allow_html=True)
     st.markdown('<div class="sec">Training Pipeline</div>', unsafe_allow_html=True)
-
     steps = [
         ("Image Collection & Validation",
          "All images are scanned recursively from <code style='color:var(--accent)'>AiArtData/</code> and <code style='color:var(--accent)'>RealArt/</code>. Before training begins, every file is decoded by TensorFlow. Corrupt files, truncated JPEGs, and images smaller than 10×10px are <strong style='color:var(--red)'>detected and removed</strong> so they never cause silent failures mid-training."),
@@ -882,7 +800,6 @@ elif page == "How It Works":
           <div class="step-n">0{i}</div>
           <div><div class="step-h">{title}</div><div class="step-b">{body}</div></div>
         </div>""", unsafe_allow_html=True)
-
     st.markdown('<div class="hr"></div><div class="sec">Inference Pipeline</div>', unsafe_allow_html=True)
     c1, c2 = st.columns(2, gap="medium")
     with c1:
@@ -909,7 +826,6 @@ elif page == "How It Works":
           <span style="color:var(--purple)">NASNetMobile</span> → scales to [-1, 1]<br><br>
           Dividing first sent wrong values through the scaler — producing garbage activations. All models predicted only "Real" at <strong style="color:var(--red)">49% accuracy</strong>.
         </div></div>""", unsafe_allow_html=True)
-
     st.markdown('<div class="hr"></div><div class="sec">Key Code Fixes</div>', unsafe_allow_html=True)
     st.markdown("""<div class="code"><span class="cm"># ❌ WRONG — caused 49% accuracy</span>
 <span class="kw">def</span> <span class="fn">parse_image</span>(path, label):
@@ -928,7 +844,6 @@ model.layers[<span class="nm">1</span>].trainable = <span class="kw">True</span>
 <span class="kw">for</span> layer <span class="kw">in</span> base.layers:        layer.trainable = <span class="kw">False</span>
 <span class="kw">for</span> layer <span class="kw">in</span> base.layers[-<span class="nm">30</span>:]:  layer.trainable = <span class="kw">True</span>
 cb_p2 = [keras.callbacks.<span class="fn">EarlyStopping</span>(monitor=<span class="st">'val_loss'</span>, patience=<span class="nm">4</span>)]</div>""", unsafe_allow_html=True)
-
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ── Footer ────────────────────────────────────────────────────
