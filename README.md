@@ -13,7 +13,7 @@
 
 Upload any image and the app will tell you whether it's AI-generated or a real photograph — with a confidence score and score breakdown bar.
 
-**Live demo →** [your-app-url.streamlit.app](https://YOUR_APP_URL.streamlit.app)
+**Live demo →** [your-app-url.streamlit.app]([https://YOUR_APP_URL.streamlit.app](https://your_app_url.streamlit.app/))
 
 ---
 
