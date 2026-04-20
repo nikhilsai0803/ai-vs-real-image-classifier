@@ -158,7 +158,7 @@ def index():
 def predict():
     """Handle image upload + model selection, run inference, render result."""
     # ── Validate model selection ──────────────────────────────
-    model_name = request.form.get("model_name", "EfficientNetB3")
+    model_name = request.form.get("model_name", "EfficientNetb0")
     if model_name not in MODEL_CONFIG:
         return render_template("index.html",
             error="Invalid model selected.",
@@ -267,4 +267,4 @@ def not_found(e):
 # ── Entry Point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     os.makedirs("classifier_outputs", exist_ok=True)
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0", port=7860)
