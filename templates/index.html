@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Classifier — AI Image Classifier</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0b;
+      --bg-2: #111114;
+      --bg-3: #18181d;
+      --border: rgba(255,255,255,0.08);
+      --border-2: rgba(255,255,255,0.14);
+      --text: #f0f0f0;
+      --text-2: #888;
+      --text-3: #555;
+      --blue: #3b82f6;
+      --blue-bg: rgba(59,130,246,0.10);
+      --blue-border: rgba(59,130,246,0.3);
+      --purple: #a78bfa;
+      --purple-bg: rgba(167,139,250,0.10);
+      --purple-border: rgba(167,139,250,0.3);
+      --green: #34d399;
+      --green-bg: rgba(52,211,153,0.08);
+      --green-border: rgba(52,211,153,0.25);
+      --amber: #fbbf24;
+      --amber-bg: rgba(251,191,36,0.08);
+      --amber-border: rgba(251,191,36,0.25);
+      --red: #f87171;
+      --radius: 10px;
+      --radius-lg: 14px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+    /* ── BACKGROUND ── */
+    .bg-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px); background-size: 48px 48px; mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 80%); }
+    .bg-orb { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0; }
+    .bg-orb-1 { width: 500px; height: 500px; top: -150px; left: -100px; background: rgba(59,130,246,0.06); }
+    .bg-orb-2 { width: 400px; height: 400px; top: -100px; right: -80px; background: rgba(167,139,250,0.05); }
+
+    /* ── NAVBAR ── */
+    nav { position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 16px 40px; background: rgba(10,10,11,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }
+    .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
+    .nav-logo { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-2); display: flex; align-items: center; justify-content: center; color: var(--blue); }
+    .nav-name { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; }
+    .nav-links { display: flex; gap: 4px; }
+    .nav-link { font-size: 13px; color: var(--text-2); text-decoration: none; padding: 6px 14px; border-radius: var(--radius); border: 1px solid transparent; transition: all 0.15s; font-family: 'JetBrains Mono', monospace; }
+    .nav-link:hover { color: var(--text); background: var(--bg-3); border-color: var(--border); }
+    .nav-link.active { color: var(--text); background: var(--bg-3); border-color: var(--border-2); }
+    .nav-icons { display: flex; gap: 8px; }
+    .nav-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--text-3); border-radius: var(--radius); border: 1px solid var(--border); transition: all 0.15s; text-decoration: none; }
+    .nav-icon:hover { color: var(--text-2); border-color: var(--border-2); }
+
+    /* ── WRAPPER ── */
+    .wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+
+    /* ── PAGE HEADER ── */
+    .page-header { padding: 64px 0 48px; opacity: 0; animation: fadeUp 0.6s ease forwards; }
+    .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.15em; color: var(--text-3); margin-bottom: 20px; }
+    .page-title { font-size: clamp(36px, 5vw, 60px); font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; margin-bottom: 16px; }
+    .page-title em { font-style: italic; font-weight: 400; color: var(--text-2); }
+    .page-title .accent { color: var(--blue); }
+    .page-sub { font-size: 15px; color: var(--text-2); line-height: 1.75; max-width: 520px; }
+
+    /* ── ERROR BANNER ── */
+    .error-banner { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 24px; font-size: 13px; color: var(--red); display: flex; align-items: center; gap: 8px; opacity: 0; animation: fadeUp 0.4s ease forwards; }
+
+    /* ── CLASSIFIER LAYOUT ── */
+    .classify-grid { display: grid; grid-template-columns: 1fr 360px; gap: 20px; margin-bottom: 80px; opacity: 0; animation: fadeUp 0.6s 0.15s ease forwards; }
+
+    /* ── UPLOAD PANEL ── */
+    .upload-panel { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; }
+
+    .form-step { margin-bottom: 36px; }
+    .form-step:last-child { margin-bottom: 0; }
+
+    .step-label { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .step-num { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-3); letter-spacing: 0.1em; }
+    .step-text { font-size: 14px; font-weight: 600; }
+
+    /* MODEL GRID */
+    .model-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; }
+    .model-card-label { cursor: pointer; }
+    .model-card-label input[type="radio"] { display: none; }
+    .model-card-inner {
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px;
+      transition: all 0.15s; cursor: pointer;
+    }
+    .model-card-label:has(input:checked) .model-card-inner { border-color: var(--blue-border); background: var(--blue-bg); }
+    .model-card-label:has(input:disabled) { opacity: 0.45; pointer-events: none; }
+    .model-card-label:hover .model-card-inner { border-color: var(--border-2); }
+    .model-card-dot { width: 7px; height: 7px; border-radius: 50%; margin-bottom: 10px; }
+    .model-card-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .model-card-meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-3); }
+    .model-card-missing { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--red); margin-top: 6px; }
+
+    .model-desc { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius); }
+    .model-desc-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .model-desc-text { font-size: 12px; color: var(--text-2); line-height: 1.55; }
+
+    /* UPLOAD BOX */
+    .upload-box {
+      display: block; cursor: pointer;
+      border: 1.5px dashed var(--border-2); border-radius: var(--radius-lg);
+      background: var(--bg-3); overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .upload-box:hover { border-color: var(--blue-border); }
+    .upload-box input[type="file"] { display: none; }
+    .upload-content { padding: 48px 24px; text-align: center; }
+    .upload-icon { color: var(--text-3); margin-bottom: 14px; }
+    .upload-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .upload-sub { font-size: 12px; color: var(--text-2); margin-bottom: 4px; font-family: 'JetBrains Mono', monospace; }
+    .upload-limit { font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+
+    .upload-preview { position: relative; height: 240px; }
+    .upload-preview img { width: 100%; height: 100%; object-fit: contain; }
+    .preview-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s; }
+    .upload-box:hover .preview-overlay { opacity: 1; }
+    .preview-change { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #fff; letter-spacing: 0.06em; }
+
+    /* PREDICT BUTTON */
+    .predict-btn {
+      width: 100%; padding: 14px 24px;
+      background: var(--blue); border: none; border-radius: var(--radius);
+      color: #fff; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .predict-btn:hover { background: #5a9cf8; transform: translateY(-1px); }
+    .predict-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── INFO PANEL ── */
+    .info-panel { display: flex; flex-direction: column; gap: 16px; }
+
+    .info-card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px;
+    }
+    .info-card-title { font-size: 13px; font-weight: 600; margin-bottom: 18px; letter-spacing: 0.01em; }
+
+    .how-step { display: flex; gap: 14px; margin-bottom: 16px; }
+    .how-step:last-child { margin-bottom: 0; }
+    .how-num { width: 22px; height: 22px; border-radius: 50%; background: var(--bg-3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-3); flex-shrink: 0; }
+    .how-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .how-body { font-size: 12px; color: var(--text-2); line-height: 1.6; }
+    .how-body code { font-family: 'JetBrains Mono', monospace; font-size: 10px; background: var(--bg-3); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; }
+
+    .status-title { font-size: 13px; font-weight: 600; margin-bottom: 14px; }
+    .status-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .status-row:last-child { margin-bottom: 0; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .status-dot.online { background: var(--green); box-shadow: 0 0 6px rgba(52,211,153,0.5); }
+    .status-dot.offline { background: var(--red); }
+    .status-name { flex: 1; font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+    .status-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 2px 8px; border-radius: 20px; }
+    .badge-online { background: var(--green-bg); border: 1px solid var(--green-border); color: var(--green); }
+    .badge-offline { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); color: var(--red); }
+
+    /* ── FOOTER ── */
+    footer { border-top: 1px solid var(--border); padding: 24px 40px; display: flex; justify-content: space-between; align-items: center; }
+    .footer-l { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-3); }
+    .footer-r { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-3); }
+    .footer-r a { color: var(--text-3); text-decoration: none; transition: color 0.15s; }
+    .footer-r a:hover { color: var(--text-2); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-1" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-2" aria-hidden="true"></div>
+
+  <!-- NAVBAR -->
+  <nav>
+    <a href="/" class="nav-brand">
+      <div class="nav-logo">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="3.5" fill="currentColor" opacity="0.4"/>
+          <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+        </svg>
+      </div>
+      <span class="nav-name">AI VS REAL</span>
+    </a>
+    <div class="nav-links">
+      <a href="/" class="nav-link">Home</a>
+      <a href="/classify" class="nav-link active">Classifier</a>
+      <a href="/about" class="nav-link">About</a>
+      <a href="https://github.com/nikhilsai0803?tab=repositories" target="_blank" class="nav-link">GitHub</a>
+    </div>
+    <div class="nav-icons">
+      <a href="https://github.com/nikhilsai0803?tab=repositories" target="_blank" class="nav-icon" title="GitHub">
+        <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+      </a>
+      <a href="https://www.linkedin.com/in/nikhil-sai-sharma-vyjayanthula-7a58561a0" target="_blank" class="nav-icon" title="LinkedIn">
+        <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="wrapper">
+
+      <!-- PAGE HEADER -->
+      <section class="page-header">
+        <div class="eyebrow">IMAGE CLASSIFICATION</div>
+        <h1 class="page-title">
+          <span class="accent">Classify</span> an<br>
+          <em>Image</em>
+        </h1>
+        <p class="page-sub">Upload any image and instantly detect whether it's a real photograph or AI-generated art.</p>
+      </section>
+
+      <!-- ERROR -->
+      {% if error %}
+      <div class="error-banner">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        {{ error }}
+      </div>
+      {% endif %}
+
+      <!-- CLASSIFIER GRID -->
+      <div class="classify-grid">
+
+        <!-- LEFT: FORM -->
+        <div class="upload-panel">
+          <form method="POST" action="/predict" enctype="multipart/form-data" id="classifyForm">
+
+            <!-- Step 1 -->
+            <div class="form-step">
+              <div class="step-label">
+                <span class="step-num">01</span>
+                <span class="step-text">Select Model</span>
+              </div>
+              <div class="model-grid">
+                {% for name, cfg in models.items() %}
+                <label class="model-card-label" for="model_{{ loop.index }}">
+                  <input type="radio" name="model_name" id="model_{{ loop.index }}"
+                         value="{{ name }}"
+                         {% if loop.first %}checked{% endif %}
+                         {% if not model_status[name] %}disabled{% endif %} />
+                  <div class="model-card-inner">
+                    <div class="model-card-dot" style="background:{{ cfg.color }}"></div>
+                    <div class="model-card-name">{{ name }}</div>
+                    <div class="model-card-meta">{{ cfg.params }} · {{ cfg.speed }}</div>
+                    {% if not model_status[name] %}
+                    <div class="model-card-missing">Missing</div>
+                    {% endif %}
+                  </div>
+                </label>
+                {% endfor %}
+              </div>
+              {% for name, cfg in models.items() %}
+              <div class="model-desc" id="desc_{{ name }}" {% if not loop.first %}style="display:none"{% endif %}>
+                <div class="model-desc-dot" style="background:{{ cfg.color }}"></div>
+                <div class="model-desc-text">{{ cfg.desc }}</div>
+              </div>
+              {% endfor %}
+            </div>
+
+            <!-- Step 2 -->
+            <div class="form-step">
+              <div class="step-label">
+                <span class="step-num">02</span>
+                <span class="step-text">Upload Image</span>
+              </div>
+              <label class="upload-box" for="imageInput" id="uploadBox">
+                <input type="file" name="image" id="imageInput" accept=".jpg,.jpeg,.png,.webp" required />
+                <div class="upload-content" id="uploadContent">
+                  <div class="upload-icon">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  </div>
+                  <div class="upload-title">Drop image here</div>
+                  <div class="upload-sub">or click to browse · JPG · PNG · WEBP</div>
+                  <div class="upload-limit">Max 10 MB</div>
+                </div>
+                <div class="upload-preview" id="uploadPreview" style="display:none">
+                  <img id="previewImg" src="" alt="Preview" />
+                  <div class="preview-overlay"><span class="preview-change">Click to change</span></div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="form-step">
+              <div class="step-label">
+                <span class="step-num">03</span>
+                <span class="step-text">Run Classifier</span>
+              </div>
+              <button type="submit" class="predict-btn" id="predictBtn">
+                <span id="btnNormal" style="display:flex;align-items:center;gap:8px">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Analyse Image
+                </span>
+                <span id="btnLoading" style="display:none;align-items:center;gap:8px">
+                  <span class="spinner"></span>
+                  Running inference…
+                </span>
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+        <!-- RIGHT: INFO -->
+        <div class="info-panel">
+
+          <div class="info-card">
+            <div class="info-card-title">How it works</div>
+            <div class="how-step">
+              <div class="how-num">1</div>
+              <div>
+                <div class="how-title">Image Preprocessing</div>
+                <div class="how-body">Resized to 224×224. Cast to float32 in [0,255]. Model-specific <code>preprocess_input</code> applied — no manual /255.</div>
+              </div>
+            </div>
+            <div class="how-step">
+              <div class="how-num">2</div>
+              <div>
+                <div class="how-title">Transfer Learning Inference</div>
+                <div class="how-body">Pretrained backbone extracts deep features. Custom classification head outputs a sigmoid score in [0, 1].</div>
+              </div>
+            </div>
+            <div class="how-step">
+              <div class="how-num">3</div>
+              <div>
+                <div class="how-title">Confidence Scoring</div>
+                <div class="how-body">Score ≥ 0.5 → Real · Score &lt; 0.5 → AI-Generated. Results below 85% confidence are flagged uncertain.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <div class="status-title">Model Status</div>
+            {% for name, cfg in models.items() %}
+            <div class="status-row">
+              <div class="status-dot {% if model_status[name] %}online{% else %}offline{% endif %}"></div>
+              <span class="status-name">{{ name }}</span>
+              <span class="status-badge {% if model_status[name] %}badge-online{% else %}badge-offline{% endif %}">
+                {{ "Ready" if model_status[name] else "Missing" }}
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-l">AI Vs Real Image Classifier</div>
+    <div class="footer-r">
+      Built by Nikhil Sai &nbsp;·&nbsp;
+      <a href="https://github.com/nikhilsai0803?tab=repositories" target="_blank">GitHub ↗</a>
+      &nbsp;·&nbsp; v2.0 Flask
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script>
+    // Preview image on select
+    document.getElementById('imageInput').addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      document.getElementById('previewImg').src = url;
+      document.getElementById('uploadContent').style.display = 'none';
+      document.getElementById('uploadPreview').style.display = 'block';
+    });
+
+    // Show loading on submit
+    document.getElementById('classifyForm').addEventListener('submit', function() {
+      document.getElementById('btnNormal').style.display = 'none';
+      document.getElementById('btnLoading').style.display = 'flex';
+      document.getElementById('predictBtn').disabled = true;
+    });
+
+    // Show correct model description
+    document.querySelectorAll('input[name="model_name"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        document.querySelectorAll('[id^="desc_"]').forEach(el => el.style.display = 'none');
+        const desc = document.getElementById('desc_' + this.value);
+        if (desc) desc.style.display = 'flex';
+      });
+    });
+  </script>
+</body>
+</html>

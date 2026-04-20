@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI vs Real Image Classifier</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0b;
+      --bg-2: #111114;
+      --bg-3: #18181d;
+      --border: rgba(255,255,255,0.08);
+      --border-2: rgba(255,255,255,0.14);
+      --text: #f0f0f0;
+      --text-2: #888;
+      --text-3: #555;
+      --blue: #3b82f6;
+      --blue-bg: rgba(59,130,246,0.10);
+      --blue-border: rgba(59,130,246,0.3);
+      --purple: #a78bfa;
+      --purple-bg: rgba(167,139,250,0.10);
+      --purple-border: rgba(167,139,250,0.3);
+      --green: #34d399;
+      --green-bg: rgba(52,211,153,0.08);
+      --green-border: rgba(52,211,153,0.25);
+      --amber: #fbbf24;
+      --amber-bg: rgba(251,191,36,0.08);
+      --amber-border: rgba(251,191,36,0.25);
+      --red: #f87171;
+      --radius: 10px;
+      --radius-lg: 14px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── BACKGROUND GRID ── */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 80%);
+    }
+
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .bg-orb-1 { width: 500px; height: 500px; top: -150px; left: -100px; background: rgba(59,130,246,0.06); }
+    .bg-orb-2 { width: 400px; height: 400px; top: -100px; right: -80px; background: rgba(167,139,250,0.05); }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 40px;
+      background: rgba(10,10,11,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .nav-logo {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid var(--border-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--blue);
+    }
+
+    .nav-name {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: var(--text);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 4px;
+    }
+
+    .nav-link {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-2);
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      transition: all 0.15s;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .nav-link:hover { color: var(--text); background: var(--bg-3); border-color: var(--border); }
+    .nav-link.active { color: var(--text); background: var(--bg-3); border-color: var(--border-2); }
+
+    .nav-icons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-3);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+
+    .nav-icon:hover { color: var(--text-2); border-color: var(--border-2); }
+
+    /* ── LAYOUT WRAPPER ── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 80px 0 64px;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 36px;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .etag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-3);
+      padding: 3px 10px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      letter-spacing: 0.04em;
+    }
+
+    .esep { color: var(--border-2); font-size: 12px; }
+
+    .elive {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--green);
+      padding: 3px 10px;
+      border: 1px solid var(--green-border);
+      border-radius: 20px;
+      background: var(--green-bg);
+      letter-spacing: 0.06em;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .elive-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .hero-title {
+      font-size: clamp(48px, 7vw, 80px);
+      font-weight: 800;
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.1s ease forwards;
+    }
+
+    .hero-title em {
+      font-style: italic;
+      font-weight: 400;
+      color: var(--text-2);
+    }
+
+    .hero-title .accent { color: var(--blue); }
+
+    .hero-sub {
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--text-2);
+      line-height: 1.75;
+      max-width: 580px;
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.2s ease forwards;
+    }
+
+    .hl-g { color: var(--green); font-weight: 500; }
+    .hl-r { color: var(--red); font-weight: 500; }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 36px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.3s ease forwards;
+    }
+
+    .chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--text-3);
+      letter-spacing: 0.02em;
+    }
+
+    .chip-blue  { color: var(--blue);   border-color: var(--blue-border);   background: var(--blue-bg); }
+    .chip-purple{ color: var(--purple); border-color: var(--purple-border); background: var(--purple-bg); }
+    .chip-green { color: var(--green);  border-color: var(--green-border);  background: var(--green-bg); }
+    .chip-amber { color: var(--amber);  border-color: var(--amber-border);  background: var(--amber-bg); }
+
+    .ctas {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 56px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.4s ease forwards;
+    }
+
+    .cta-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: var(--radius);
+      background: var(--blue);
+      color: #fff;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.01em;
+    }
+
+    .cta-primary:hover { background: #5a9cf8; transform: translateY(-1px); }
+
+    .cta-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--text-2);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .cta-secondary:hover { color: var(--text); border-color: var(--border-2); background: var(--bg-3); }
+
+    /* ── STAT BAR ── */
+    .stat-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--bg-2);
+      margin-bottom: 80px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.5s ease forwards;
+    }
+
+    .stat {
+      padding: 20px 24px;
+      border-right: 1px solid var(--border);
+    }
+
+    .stat:last-child { border-right: none; }
+
+    .stat-val {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+    }
+
+    .stat-lbl {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-3);
+      letter-spacing: 0.03em;
+    }
+
+    /* ── SECTION LABEL ── */
+    .sec-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      color: var(--text-3);
+      margin-bottom: 24px;
+    }
+
+    /* ── CARDS ── */
+    .cards-section { padding-bottom: 72px; }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      text-decoration: none;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+
+    .card:hover { border-color: var(--border-2); transform: translateY(-2px); }
+    .card-featured { border-color: var(--blue-border); }
+    .card-featured:hover { border-color: var(--blue); }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+    }
+
+    .ci-blue { background: var(--blue-bg); border-color: var(--blue-border); color: var(--blue); }
+    .ci-purple { background: var(--purple-bg); border-color: var(--purple-border); color: var(--purple); }
+    .ci-green { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+
+    .badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-blue { background: var(--blue-bg); border: 1px solid var(--blue-border); color: var(--blue); }
+    .badge-purple { background: var(--purple-bg); border: 1px solid var(--purple-border); color: var(--purple); }
+    .badge-green { background: var(--green-bg); border: 1px solid var(--green-border); color: var(--green); }
+
+    .card-title { font-size: 15px; font-weight: 600; }
+    .card-desc { font-size: 13px; color: var(--text-2); line-height: 1.65; }
+
+    .card-feats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .feat {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--text-3);
+    }
+
+    .card-arrow {
+      margin-top: auto;
+      font-size: 16px;
+      color: var(--text-3);
+    }
+
+    /* ── HOW IT WORKS ── */
+    .how-section { padding-bottom: 72px; }
+
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--bg-2);
+    }
+
+    .step {
+      padding: 28px 24px;
+      border-right: 1px solid var(--border);
+    }
+
+    .step:last-child { border-right: none; }
+
+    .step-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text-3);
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+    }
+
+    .step-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    .step-body { font-size: 12px; color: var(--text-2); line-height: 1.6; font-weight: 400; }
+
+    /* ── TECH STACK ── */
+    .tech-section { padding-bottom: 72px; }
+
+    .tech-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tpill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--text-3);
+      transition: all 0.15s;
+    }
+
+    .tpill:hover { color: var(--text-2); border-color: var(--border-2); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-l {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-3);
+    }
+
+    .footer-r {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-3);
+    }
+
+    .footer-r a {
+      color: var(--text-3);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .footer-r a:hover { color: var(--text-2); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-1" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-2" aria-hidden="true"></div>
+
+  <!-- NAVBAR -->
+  <nav>
+    <a href="/" class="nav-brand">
+      <div class="nav-logo">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="3.5" fill="currentColor" opacity="0.4"/>
+          <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+        </svg>
+      </div>
+      <span class="nav-name">AI VS REAL</span>
+    </a>
+    <div class="nav-links">
+      <a href="/" class="nav-link active">Home</a>
+      <a href="/classify" class="nav-link">Classifier</a>
+      <a href="/about" class="nav-link">About</a>
+      <a href="https://github.com/nikhilsai0803?tab=repositories" target="_blank" class="nav-link">GitHub</a>
+    </div>
+    <div class="nav-icons">
+      <a href="https://github.com/nikhilsai0803?tab=repositories" target="_blank" class="nav-icon" title="GitHub">
+        <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+      </a>
+      <a href="https://www.linkedin.com/in/nikhil-sai-sharma-vyjayanthula-7a58561a0" target="_blank" class="nav-icon" title="LinkedIn">
+        <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main>
+    <div class="wrapper">
+
+      <!-- HERO -->
+      <section class="hero">
+        <div class="eyebrow">
+          <span class="etag">AI Vision</span>
+          <span class="esep">·</span>
+          <span class="etag">Authenticity Check</span>
+          <span class="esep">·</span>
+          <span class="etag">Classifier v1.0</span>
+          <span class="esep">·</span>
+          <span class="elive"><span class="elive-dot"></span>LIVE</span>
+        </div>
+
+        <h1 class="hero-title">
+          AI vs Real<br>
+          Image <em>Classifier</em>
+        </h1>
+
+        <p class="hero-sub">
+          A deep learning system that distinguishes <span class="hl-g">real photographs</span> from
+          <span class="hl-r">AI-generated images</span> — using transfer learning across
+          four pretrained neural networks with two-phase fine-tuning.
+        </p>
+
+        <div class="chips">
+          <span class="chip chip-blue">EfficientNetB0</span>
+          <span class="chip chip-purple">MobileNetV2</span>
+          <span class="chip">4 Models</span>
+          <span class="chip chip-green">~100K Images</span>
+          <span class="chip chip-amber">ImageNet Pretrained</span>
+        </div>
+
+        <div class="ctas">
+          <a href="/classify" class="cta-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Launch Classifier
+          </a>
+          <a href="/about" class="cta-secondary">
+            Explore Project
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+        </div>
+
+        <div class="stat-bar">
+          <div class="stat">
+            <div class="stat-val" style="color:var(--blue)">4</div>
+            <div class="stat-lbl">Neural Networks</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" style="color:var(--purple)">224px</div>
+            <div class="stat-lbl">Input Resolution</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" style="color:var(--green)">2-Phase</div>
+            <div class="stat-lbl">Training Strategy</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" style="color:var(--amber)">85%+</div>
+            <div class="stat-lbl">Confidence Threshold</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CARDS -->
+      <section class="cards-section">
+        <div class="sec-label">EXPLORE THE PROJECT</div>
+        <div class="cards-grid">
+
+          <a href="/classify" class="card card-featured">
+            <div class="card-top">
+              <div class="card-icon ci-blue">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.35"/>
+                </svg>
+              </div>
+              <span class="badge badge-blue">Primary</span>
+            </div>
+            <div class="card-title">Image Classifier</div>
+            <div class="card-desc">Upload any image and instantly detect whether it was photographed in the real world or generated by an AI model.</div>
+            <div class="card-feats">
+              <span class="feat">4 model choices</span>
+              <span class="feat">Confidence score</span>
+              <span class="feat">Drag & drop</span>
+            </div>
+            <div class="card-arrow">→</div>
+          </a>
+
+          <a href="/about" class="card">
+            <div class="card-top">
+              <div class="card-icon ci-purple">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                </svg>
+              </div>
+              <span class="badge badge-purple">Research</span>
+            </div>
+            <div class="card-title">About the Project</div>
+            <div class="card-desc">Understand the methodology — dataset construction, transfer learning strategy, two-phase training, and key engineering decisions.</div>
+            <div class="card-feats">
+              <span class="feat">Training pipeline</span>
+              <span class="feat">Architecture details</span>
+              <span class="feat">Dataset info</span>
+            </div>
+            <div class="card-arrow">→</div>
+          </a>
+
+          <a href="https://github.com/nikhilsai0803?tab=repositories" target="_blank" class="card">
+            <div class="card-top">
+              <div class="card-icon ci-green">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+              </div>
+              <span class="badge badge-green">Open Source</span>
+            </div>
+            <div class="card-title">Source Code</div>
+            <div class="card-desc">Browse the full training notebooks, model architecture, preprocessing pipeline, and Flask app code on GitHub.</div>
+            <div class="card-feats">
+              <span class="feat">Jupyter notebooks</span>
+              <span class="feat">Flask backend</span>
+              <span class="feat">Model weights</span>
+            </div>
+            <div class="card-arrow">↗</div>
+          </a>
+
+        </div>
+      </section>
+
+      <!-- HOW IT WORKS -->
+      <section class="how-section">
+        <div class="sec-label">HOW IT WORKS</div>
+        <div class="how-grid">
+          <div class="step">
+            <div class="step-num">01</div>
+            <div class="step-title">Upload</div>
+            <div class="step-body">Drop any JPG, PNG, or WEBP image into the classifier — no account needed.</div>
+          </div>
+          <div class="step">
+            <div class="step-num">02</div>
+            <div class="step-title">Select Model</div>
+            <div class="step-body">Choose from 4 pretrained neural networks — trade off speed vs accuracy.</div>
+          </div>
+          <div class="step">
+            <div class="step-num">03</div>
+            <div class="step-title">Inference</div>
+            <div class="step-body">Image preprocessed to 224×224, passed through pretrained backbone, sigmoid output computed.</div>
+          </div>
+          <div class="step">
+            <div class="step-num">04</div>
+            <div class="step-title">Result</div>
+            <div class="step-body">Verdict returned with full confidence breakdown — Real or AI-Generated.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TECH STACK -->
+      <section class="tech-section">
+        <div class="sec-label">BUILT WITH</div>
+        <div class="tech-row">
+          <span class="tpill">TensorFlow 2.21</span>
+          <span class="tpill">Keras</span>
+          <span class="tpill">EfficientNetB3</span>
+          <span class="tpill">MobileNetV2</span>
+          <span class="tpill">Flask</span>
+          <span class="tpill">NumPy</span>
+          <span class="tpill">Pillow</span>
+          <span class="tpill">ImageNet Weights</span>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-l">AI Vs Real Image Classifier/div>
+    <div class="footer-r">
+      Built by Nikhil Sai &nbsp;·&nbsp;
+      <a href="https://github.com/nikhilsai0803?tab=repositories" target="_blank">GitHub ↗</a>
+      &nbsp;·&nbsp; v2.0 Flask
+    </div>
+  </footer>
+
+</body>
+</html>
