@@ -1,10 +1,11 @@
 # 🧿 AI vs Real Image Classifier
 
-> Detect AI-generated artwork from real photographs using transfer learning — MobileNetV2, EfficientNetB0, and NASNetMobile, fine-tuned with a two-phase training strategy.
+> Detect AI-generated artwork from real photographs using transfer learning — MobileNetV2, EfficientNetB0, NASNetMobile, and Model1, fine-tuned with a two-phase training strategy.
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://YOUR_APP_URL.streamlit.app)
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)
-![TensorFlow](https://img.shields.io/badge/TensorFlow-2.21-FF6F00?style=flat&logo=tensorflow&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=flat&logo=python&logoColor=white)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-FF6F00?style=flat&logo=tensorflow&logoColor=white)
+![HuggingFace](https://img.shields.io/badge/HuggingFace-Spaces-FFD21E?style=flat&logo=huggingface&logoColor=black)
+![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=flat&logo=docker&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat)
 
 ---
@@ -13,13 +14,13 @@
 
 Upload any image and the app will tell you whether it's AI-generated or a real photograph — with a confidence score and score breakdown bar.
 
-**Live demo →** [your-app-url.streamlit.app](https://ai-vs-real-image-classifier-lobkjy7skjghtvptgd8chz.streamlit.app/)
+**🚀 Live demo →** [huggingface.co/spaces/sharmasai12/AI_vs_REAL](https://huggingface.co/spaces/sharmasai12/AI_vs_REAL)
 
 ---
 
 ## 🧠 How It Works
 
-Three pretrained ImageNet models are fine-tuned in **two phases** on a dataset of ~4,700 images:
+Four pretrained ImageNet models are fine-tuned in **two phases** on a dataset of ~4,700 images:
 
 | Phase | What happens |
 |-------|-------------|
@@ -35,6 +36,7 @@ Each model uses its own `preprocess_input` function to ensure pixel values arriv
 | MobileNetV2 | 2.4M | Fastest |
 | EfficientNetB0 | 4.2M | Balanced |
 | NASNetMobile | 4.4M | Most robust |
+| Model1 | — | Custom |
 
 ### Dataset
 
@@ -45,27 +47,31 @@ Each model uses its own `preprocess_input` function to ensure pixel values arriv
 ## 🗂️ Project Structure
 
 ```
-ai-vs-real-classifier/
+AI_vs_REAL/
 │
-├── app.py                        ← Streamlit web app
-├── AI_Image_Classifier.ipynb     ← Training notebook
-├── requirements.txt              ← Python dependencies
-├── packages.txt                  ← System dependencies (Streamlit Cloud)
+├── app.py                             ← Flask web app
+├── Dockerfile                         ← Docker config for HF Spaces
+├── requirements.txt                   ← Python dependencies
+├── .gitattributes                     ← Git LFS tracking
 ├── .gitignore
 ├── README.md
+├── AI vs REAL Image_Classifier.ipynb  ← Training notebook
 │
-└── classifier_outputs/           ← Generated after training
+├── templates/                         ← HTML templates
+│   ├── index.html
+│   ├── home.html
+│   ├── about.html
+│   └── result.html
+│
+├── static/                            ← CSS & JS
+│   ├── css/style.css
+│   └── js/main.js
+│
+└── classifier_outputs/                ← Model files (tracked via Git LFS)
     ├── mobilenetv2.keras
     ├── efficientnetb0.keras
     ├── nasnetmobile.keras
-    ├── best_model.keras
-    ├── 01_dataset_overview.png
-    ├── 02_sample_images.png
-    ├── 03_image_properties.png
-    ├── 04_training_curves.png
-    ├── 05_training_time.png
-    ├── 06_confusion_matrices.png
-    └── 07_model_comparison.png
+    └── model1.keras
 ```
 
 ---
@@ -74,8 +80,8 @@ ai-vs-real-classifier/
 
 ### 1. Clone the repo
 ```bash
-git clone https://github.com/YOUR_USERNAME/ai-vs-real-classifier.git
-cd ai-vs-real-classifier
+git clone https://github.com/nikhilsai0803/AI_vs_REAL.git
+cd AI_vs_REAL
 ```
 
 ### 2. Create a virtual environment
@@ -94,80 +100,46 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Download the dataset
-Download from [Kaggle](https://www.kaggle.com/datasets/tristanzhang32/ai-generated-images-vs-real-images) and extract so you have:
-```
-archive/
-├── AiArtData/
-└── RealArt/
-```
-Update `BASE_DIR` in the notebook to point to your `archive/` folder.
-
-### 5. Train the models
-Open and run `AI_Image_Classifier.ipynb` top to bottom.  
-This creates the `classifier_outputs/` folder with all `.keras` model files.
-
-### 6. Launch the app
+### 4. Launch the app
 ```bash
-streamlit run app.py
+python app.py
 ```
+
+Visit `http://localhost:7860` in your browser.
 
 ---
 
-## ☁️ Deploy on Streamlit Community Cloud (free)
+## ☁️ Deployed on Hugging Face Spaces
 
-> ⚠️ The `.keras` model files are large (~50–100MB each). You **cannot** push them to GitHub directly. Use Git LFS or host them externally (see below).
+This app is live on **Hugging Face Spaces** using Docker.
 
-### Option A — Git LFS (recommended for beginners)
-
-```bash
-# Install Git LFS (one time)
-git lfs install
-
-# Track keras model files
-git lfs track "*.keras"
-
-# This creates .gitattributes — commit it
-git add .gitattributes
-git commit -m "Track keras models with LFS"
-
-# Now add and push your models normally
-git add classifier_outputs/*.keras
-git commit -m "Add trained models"
-git push
-```
-
-Then on [share.streamlit.io](https://share.streamlit.io):
-1. Connect your GitHub account
-2. Select this repo, branch `main`, file `app.py`
-3. Click **Deploy**
-
-### Option B — Host models on Google Drive / HuggingFace Hub
-
-If you don't want to use LFS, you can upload models to HuggingFace Hub and download them on app startup. Ask for this snippet if needed.
+| Detail | Info |
+|--------|------|
+| 🐳 Deployment | Docker-based |
+| ⚡ Server | Gunicorn on port `7860` |
+| 📦 Models | Tracked with Git LFS (~218MB) |
+| 🔗 Live URL | [sharmasai12/AI_vs_REAL](https://huggingface.co/spaces/sharmasai12/AI_vs_REAL) |
 
 ---
 
 ## 📊 Results
 
-After training with the fixed preprocessing pipeline:
-
-| Model | Test Accuracy | Test Loss |
-|-------|-------------|-----------|
-| MobileNetV2 | ~78–82% | — |
-| EfficientNetB0 | ~75–80% | — |
-| NASNetMobile | ~76–81% | — |
-
-*(Exact numbers depend on your run — update this table after training)*
+| Model | Test Accuracy |
+|-------|-------------|
+| MobileNetV2 | ~78–82% |
+| EfficientNetB0 | ~75–80% |
+| NASNetMobile | ~76–81% |
+| Model1 | ~90-93% |
 
 ---
 
 ## 🛠️ Key Technical Decisions
 
-- **No `/255` in preprocessing** — each model's `preprocess_input()` handles normalisation. Applying `/255` before calling it was the single biggest bug causing ~49% accuracy (random guessing).
+- **No `/255` in preprocessing** — each model's `preprocess_input()` handles normalisation. Applying `/255` before calling it causes ~49% accuracy (random guessing).
 - **Partial fine-tuning** — only the last 30 layers of the base are unfrozen in Phase 2. Full unfreezing destroys pretrained weights.
 - **Fresh callbacks per phase** — `EarlyStopping` is re-instantiated before Phase 2 so stale patience counters don't interfere.
-- **Image validation at startup** — corrupt/tiny images are detected and removed before training begins.
+- **Docker deployment** — ensures consistent environment on HF Spaces.
+- **Git LFS** — handles large `.keras` model files cleanly.
 
 ---
 
@@ -177,5 +149,4 @@ MIT — free to use, modify, and distribute.
 
 ---
 
-*Built with TensorFlow, Streamlit, and a lot of debugging.*
-
+*Built with TensorFlow, Flask, Docker, and deployed on Hugging Face Spaces.*
