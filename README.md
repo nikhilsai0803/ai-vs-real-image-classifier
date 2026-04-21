@@ -40,7 +40,7 @@ Each model uses its own `preprocess_input` function to ensure pixel values arriv
 
 ### Dataset
 
-[tristanzhang32/ai-generated-images-vs-real-images](https://www.kaggle.com/datasets/tristanzhang32/ai-generated-images-vs-real-images) — ~2,300 AI-generated artworks + ~2,400 real photographs.
+[tristanzhang32/ai-generated-images-vs-real-images](https://www.kaggle.com/datasets/tristanzhang32/ai-generated-images-vs-real-images) — ~24,300 AI-generated artworks + ~24,400 real photographs.
 
 ---
 
